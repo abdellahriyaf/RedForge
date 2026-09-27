@@ -1,0 +1,56 @@
+name: Android CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build, test, and lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build debug APK
+        run: ./gradlew clean assembleDebug --stacktrace --console=plain
+
+      - name: Unit tests
+        run: ./gradlew test --stacktrace --console=plain
+
+      - name: Lint
+        run: |
+          ./gradlew lint --stacktrace --console=plain || {
+            echo '===== FULL LINT REPORT ====='
+            find app/build -type f -name 'lint-results*.txt' -print -exec cat {} \;
+            exit 1
+          }
+
+      - name: Upload debug APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redforge-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
