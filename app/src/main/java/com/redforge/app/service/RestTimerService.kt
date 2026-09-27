@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.os.VibrationEffect
@@ -12,7 +13,6 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import com.redforge.app.data.datastore.SettingsDataStore
 import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
@@ -128,8 +128,21 @@ class RestTimerService : Service() {
     }
 
     private fun vibrateOnFinish() {
+        if (checkSelfPermission(Manifest.permission.VIBRATE) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
         val vibrator = getSystemService(Vibrator::class.java) ?: return
-        vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
+        val pattern = longArrayOf(0, 200, 100, 200)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(pattern, -1)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
     }
 
     private fun playFinishSound() {
@@ -140,8 +153,8 @@ class RestTimerService : Service() {
 
     private fun updateNotification(secondsRemaining: Int, isPaused: Boolean) {
         if (
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }

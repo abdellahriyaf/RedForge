@@ -13,6 +13,9 @@
 
     <!-- Camera is requested only when the user explicitly chooses Take photo. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <!-- No INTERNET permission is requested. Workout data stays local unless
          the user explicitly exports a backup. Media controls use Android's
