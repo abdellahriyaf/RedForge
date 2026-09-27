@@ -1,7 +1,10 @@
 package com.redforge.app.service
 
+import android.Manifest
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
 import android.os.VibrationEffect
@@ -125,8 +128,21 @@ class RestTimerService : Service() {
     }
 
     private fun vibrateOnFinish() {
+        if (checkSelfPermission(Manifest.permission.VIBRATE) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
         val vibrator = getSystemService(Vibrator::class.java) ?: return
-        vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
+        val pattern = longArrayOf(0, 200, 100, 200)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(
+                VibrationEffect.createWaveform(pattern, -1)
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(pattern, -1)
+        }
     }
 
     private fun playFinishSound() {
