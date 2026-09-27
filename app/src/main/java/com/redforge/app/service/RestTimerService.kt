@@ -152,6 +152,13 @@ class RestTimerService : Service() {
     }
 
     private fun updateNotification(secondsRemaining: Int, isPaused: Boolean) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
         NotificationManagerCompat.from(this).notify(
             TimerNotificationHelper.NOTIFICATION_ID,
             TimerNotificationHelper.build(this, secondsRemaining, isPaused)
