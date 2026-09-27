@@ -252,7 +252,6 @@ object DataBackupUtil {
         context: Context,
         uri: Uri
     ): Boolean {
-        return try {
         val stagingRoot = File(
             context.cacheDir,
             "restore_${UUID.randomUUID()}"
@@ -299,6 +298,7 @@ object DataBackupUtil {
             PHOTOS_ENTRY_PREFIX
         )
 
+        return try {
             stagingRoot.mkdirs()
             stagingPhotos.mkdirs()
 
@@ -602,9 +602,9 @@ object DataBackupUtil {
 
         val allowed =
             name == DB_ENTRY ||
-                name == PREFS_ENTRY ||
-                name.startsWith(PHOTOS_ENTRY_PREFIX) ||
-                (allowMarker && name == MARKER_ENTRY)
+                    name == PREFS_ENTRY ||
+                    name.startsWith(PHOTOS_ENTRY_PREFIX) ||
+                    (allowMarker && name == MARKER_ENTRY)
 
         if (!allowed) {
             throw IllegalArgumentException(
