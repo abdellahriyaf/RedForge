@@ -9,8 +9,6 @@ import com.redforge.app.data.local.db.RedForgeDatabase
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.nio.file.Files
-import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,11 +78,7 @@ object DataBackupUtil {
             )
 
             try {
-                Files.copy(
-                    dbFile.toPath(),
-                    snapshotFile.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
+                copyFile(dbFile, snapshotFile)
 
                 validateSQLiteDatabase(snapshotFile)
 
@@ -411,19 +405,11 @@ object DataBackupUtil {
             rollbackRoot.mkdirs()
 
             if (currentDb.isFile) {
-                Files.copy(
-                    currentDb.toPath(),
-                    rollbackDb.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
+                copyFile(currentDb, rollbackDb)
             }
 
             if (currentPrefs.isFile) {
-                Files.copy(
-                    currentPrefs.toPath(),
-                    rollbackPrefs.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
+                copyFile(currentPrefs, rollbackPrefs)
             }
 
             if (currentPhotos.isDirectory) {
@@ -445,20 +431,12 @@ object DataBackupUtil {
 
             currentDb.parentFile?.mkdirs()
 
-            Files.copy(
-                stagedDb.toPath(),
-                currentDb.toPath(),
-                StandardCopyOption.REPLACE_EXISTING
-            )
+            copyFile(stagedDb, currentDb)
 
             if (preferencesFound) {
                 currentPrefs.parentFile?.mkdirs()
 
-                Files.copy(
-                    stagedPrefs.toPath(),
-                    currentPrefs.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
+                copyFile(stagedPrefs, currentPrefs)
             } else if (currentPrefs.exists()) {
                 currentPrefs.delete()
             }
@@ -489,20 +467,12 @@ object DataBackupUtil {
                         currentDb.delete()
                     }
                     currentDb.parentFile?.mkdirs()
-                    Files.copy(
-                        rollbackDb.toPath(),
-                        currentDb.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING
-                    )
+                    copyFile(rollbackDb, currentDb)
                 }
 
                 if (rollbackPrefs.isFile) {
                     currentPrefs.parentFile?.mkdirs()
-                    Files.copy(
-                        rollbackPrefs.toPath(),
-                        currentPrefs.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING
-                    )
+                    copyFile(rollbackPrefs, currentPrefs)
                 }
 
                 if (rollbackPhotos.isDirectory) {
@@ -757,6 +727,23 @@ object DataBackupUtil {
         }
     }
 
+    private fun copyFile(
+        source: File,
+        destination: File
+    ) {
+        if (!source.isFile) {
+            return
+        }
+
+        destination.parentFile?.mkdirs()
+
+        FileInputStream(source).use { input ->
+            FileOutputStream(destination).use { output ->
+                input.copyTo(output)
+            }
+        }
+    }
+
     private fun copyDirectory(
         source: File,
         destination: File
@@ -779,11 +766,7 @@ object DataBackupUtil {
                     target
                 )
             } else {
-                Files.copy(
-                    child.toPath(),
-                    target.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-                )
+                copyFile(child, target)
             }
         }
     }
