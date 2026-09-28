@@ -247,7 +247,7 @@ private fun RedForgeBottomBar(navController: NavHostController) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    NavigationBar {
+    NavigationBar(\n        modifier = Modifier.shadow(10.dp),\n        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),\n        tonalElevation = 8.dp\n    ) {
         NavigationBarItem(
             selected = currentRoute == NavRoutes.HOME,
             onClick = { navController.navigateBottom(NavRoutes.HOME) },
