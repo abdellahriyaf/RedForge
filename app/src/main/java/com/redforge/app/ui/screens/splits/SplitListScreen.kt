@@ -12,6 +12,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -92,30 +95,61 @@ fun SplitListScreen(onOpenSplit: (Long) -> Unit) {
 
 
     activationPrompt?.let { prompt ->
+        var showDatePicker by remember(prompt.split.id) { mutableStateOf(false) }
+        var selectedDate by remember(prompt.split.id) { mutableStateOf<Long?>(null) }
+
         AlertDialog(
             onDismissRequest = { vm.dismissActivationPrompt() },
-            title = { Text("Switch to ${prompt.split.name}?") },
+            title = { Text("Start " + prompt.split.name) },
             text = {
-                Text(
-                    "You already completed a workout today. Starting the new split today will make its first day available now. Starting tomorrow will keep today’s workout as today’s session and begin the new split tomorrow."
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("Choose when this plan should begin. You can start today or pick a future date.")
+                    OutlinedButton(
+                        onClick = { vm.confirmActivation(prompt.split, System.currentTimeMillis()) },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Start today") }
+                    OutlinedButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) { Text("Choose start date") }
+                    selectedDate?.let { millis ->
+                        Text(
+                            "Selected start: " + java.text.DateFormat.getDateInstance(java.text.DateFormat.MEDIUM)
+                                .format(java.util.Date(millis)),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             },
             confirmButton = {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = { vm.confirmActivation(prompt.split, startTomorrow = false) }) {
-                        Text("Start today")
+                TextButton(
+                    enabled = selectedDate != null,
+                    onClick = {
+                        selectedDate?.let { vm.confirmActivation(prompt.split, it) }
                     }
-                    TextButton(onClick = { vm.confirmActivation(prompt.split, startTomorrow = true) }) {
-                        Text("Start tomorrow")
-                    }
-                }
+                ) { Text("Use selected date") }
             },
             dismissButton = {
-                TextButton(onClick = { vm.dismissActivationPrompt() }) {
-                    Text("Cancel")
-                }
+                TextButton(onClick = { vm.dismissActivationPrompt() }) { Text("Cancel") }
             }
         )
+
+        if (showDatePicker) {
+            val pickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        selectedDate = pickerState.selectedDateMillis
+                        showDatePicker = false
+                    }) { Text("Select") }
+                },
+                dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
+            ) {
+                DatePicker(state = pickerState)
+            }
+        }
     }
 
     deletingSplit?.let { split ->
@@ -153,7 +187,7 @@ private fun SplitRow(
             IconButton(onClick = onSetActive) {
                 Icon(
                     if (split.isActive) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                    contentDescription = if (split.isActive) "Active split" else "Set active",
+                    contentDescription = if (split.isActive) "Deselect active split" else "Set active",
                     tint = if (split.isActive) ForgeGreen else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
