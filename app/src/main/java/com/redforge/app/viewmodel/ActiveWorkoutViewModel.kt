@@ -73,6 +73,7 @@ class ActiveWorkoutViewModel(
     }
 
     private suspend fun resumeOrStart() {
+        val settings = settingsDataStore.settingsFlow.first()
         val activeSplit = splitRepository.observeActiveSplit().first()
         val isDeload = activeSplit?.isDeloadCycle ?: false
         _uiState.value = _uiState.value.copy(isDeloadCycle = isDeload)
