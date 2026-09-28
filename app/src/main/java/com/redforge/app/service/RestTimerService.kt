@@ -1,9 +1,7 @@
 package com.redforge.app.service
 
-import android.Manifest
 import android.app.Service
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
