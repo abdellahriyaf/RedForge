@@ -185,78 +185,46 @@ fun SettingsScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(10.dp))
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column {
                     OutlinedButton(
                         onClick = {
                             isExporting = true
                             scope.launch {
-                                val uri = withContext(Dispatchers.IO) {
-                                    DataBackupUtil.exportBackup(context)
-                                }
+                                val uri = withContext(Dispatchers.IO) { DataBackupUtil.exportBackup(context) }
                                 isExporting = false
-                                if (uri != null) {
-                                    DataBackupUtil.shareBackup(context, uri)
-                                }
+                                if (uri != null) DataBackupUtil.shareBackup(context, uri)
                             }
                         },
                         enabled = !isExporting,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            Icons.Filled.CloudUpload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(if (isExporting) "Exporting…" else "Export backup")
                     }
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         "Create a local .zip backup",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-                }
-
-                Column {
+                    Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = {
-                            importPicker.launch(
-                                arrayOf(
-                                    "application/zip",
-                                    "application/octet-stream",
-                                    "*/*"
-                                )
-                            )
+                            importPicker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                         },
                         enabled = !isImporting,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            Icons.Filled.CloudDownload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Filled.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(if (isImporting) "Checking…" else "Restore backup")
                     }
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         "Replace current data from a RedForge .zip",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-                }
-            }
-                    }
                 }
             }
         }
