@@ -2,7 +2,6 @@ package com.redforge.app.ui.screens.progress
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.animateItemPlacement
 import androidx.compose.foundation.lazy.items
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.material.icons.Icons
@@ -106,7 +105,7 @@ private fun ExerciseProgressCard(
     val totalVolume by animateIntAsState(summary.totalVolumeAllTime, label = "total_volume")
 
     ForgeCard(
-        modifier = Modifier.fillMaxWidth().animateItemPlacement(),
+        modifier = Modifier.fillMaxWidth(),
         onClick = onClick
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
