@@ -113,17 +113,17 @@ fun ForgeCard(
     )
     val decoratedModifier = modifier
         .shadow(
-            elevation = 5.dp,
+            elevation = 7.dp,
             shape = shape,
             clip = false,
-            ambientColor = Color.Black.copy(alpha = 0.30f),
-            spotColor = Color.Black.copy(alpha = 0.42f)
+            ambientColor = Color.Black.copy(alpha = 0.24f),
+            spotColor = Color.Black.copy(alpha = 0.34f)
         )
         .clip(shape)
         .background(ForgeSurfaceGradient)
         .border(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.30f),
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.20f),
             shape = shape
         )
         .graphicsLayer { scaleX = scale; scaleY = scale }
