@@ -9,6 +9,7 @@ import android.os.CountDownTimer
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.media.AudioManager
 import android.media.ToneGenerator
 import com.redforge.app.data.datastore.SettingsDataStore
@@ -33,6 +34,8 @@ class RestTimerService : Service() {
 
     private var countDownTimer: CountDownTimer? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val mainHandler = android.os.Handler(mainLooper)
+    private var finishTone: ToneGenerator? = null
 
     companion object {
         const val ACTION_START = "com.redforge.app.timer.START"
@@ -128,33 +131,37 @@ class RestTimerService : Service() {
     }
 
     private fun vibrateOnFinish() {
-        if (checkSelfPermission(Manifest.permission.VIBRATE) != PackageManager.PERMISSION_GRANTED) {
-            return
-        }
+        val pattern = longArrayOf(0, 350, 120, 350, 120, 650)
 
-        val vibrator = getSystemService(Vibrator::class.java) ?: return
-        val pattern = longArrayOf(0, 200, 100, 200)
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(
-                VibrationEffect.createWaveform(pattern, -1)
-            )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val vibrator = getSystemService(VibratorManager::class.java)?.defaultVibrator ?: return
+            vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
         } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(pattern, -1)
+            val vibrator = getSystemService(Vibrator::class.java) ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(pattern, -1)
+            }
         }
     }
 
     private fun playFinishSound() {
-        val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
-        tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 140)
-        android.os.Handler(mainLooper).postDelayed({
-            tone.startTone(ToneGenerator.TONE_PROP_ACK, 180)
-        }, 155L)
-        android.os.Handler(mainLooper).postDelayed({
-            tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 240)
-        }, 355L)
-        android.os.Handler(mainLooper).postDelayed({ tone.release() }, 650L)
+        finishTone?.release()
+        val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 100)
+        finishTone = tone
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 360)
+        mainHandler.postDelayed({
+            tone.startTone(ToneGenerator.TONE_PROP_ACK, 420)
+        }, 420L)
+        mainHandler.postDelayed({
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 650)
+        }, 930L)
+        mainHandler.postDelayed({
+            tone.release()
+            if (finishTone === tone) finishTone = null
+        }, 1700L)
     }
 
     private fun updateNotification(secondsRemaining: Int, isPaused: Boolean) {
@@ -178,6 +185,9 @@ class RestTimerService : Service() {
 
     override fun onDestroy() {
         countDownTimer?.cancel()
+        mainHandler.removeCallbacksAndMessages(null)
+        finishTone?.release()
+        finishTone = null
         serviceScope.cancel()
         super.onDestroy()
     }
