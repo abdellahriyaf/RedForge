@@ -97,7 +97,29 @@ class ActiveWorkoutViewModel(
             }
 
             val allSessions = workoutRepository.observeAllSessions().first()
-            val plannedDay = SplitScheduler.nextDay(days, allSessions)
+            val todayStart = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val skippedToday = settings.skippedSplitId == activeSplit.id &&
+                settings.skippedWorkoutDayStartMillis == todayStart
+            if (skippedToday) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = "Today's workout was skipped. The next scheduled session will be available tomorrow."
+                )
+                return
+            }
+            val scheduleAnchor = settings.scheduleAnchorStartMillis.takeIf {
+                it != null && settings.scheduleAnchorSplitId == activeSplit.id
+            }
+            val plannedDay = SplitScheduler.nextDay(
+                days,
+                allSessions,
+                scheduleAnchorStartMillis = scheduleAnchor
+            )
             if (plannedDay == null || plannedDay.isRestDay) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
