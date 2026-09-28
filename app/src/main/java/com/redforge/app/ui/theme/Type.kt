@@ -7,71 +7,57 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * RedForge's typography system: strong hierarchy for training actions,
- * compact metadata, and comfortable body copy for dense tracking screens.
+ * RedForge typography: modern sans-serif hierarchy with strong training headlines
+ * and readable data-dense set logs. Colors are supplied by MaterialTheme so text
+ * remains readable in both dark and light surfaces.
  */
 val ForgeTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Bold,
-        fontSize = 38.sp,
-        lineHeight = 42.sp,
-        letterSpacing = (-0.9).sp
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Black,
+        fontSize = 40.sp,
+        letterSpacing = (-0.5).sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = FontFamily.Monospace,
-        fontWeight = FontWeight.Bold,
-        fontSize = 27.sp,
-        lineHeight = 33.sp,
-        letterSpacing = (-0.35).sp
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 28.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.ExtraBold,
-        fontSize = 23.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 20.sp,
-        lineHeight = 25.sp,
-        letterSpacing = 0.sp
+        fontSize = 20.sp
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 16.sp,
-        lineHeight = 21.sp,
-        letterSpacing = 0.sp
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
-        lineHeight = 22.sp,
-        letterSpacing = 0.05.sp
+        fontSize = 16.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.sp
+        fontSize = 14.sp
     ),
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
-        lineHeight = 18.sp,
-        letterSpacing = 0.6.sp
+        letterSpacing = 0.5.sp
     ),
     labelSmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
-        lineHeight = 15.sp,
-        letterSpacing = 0.65.sp
+        letterSpacing = 0.5.sp
     )
 )
