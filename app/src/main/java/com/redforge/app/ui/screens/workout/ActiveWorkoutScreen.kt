@@ -127,7 +127,7 @@ fun ActiveWorkoutScreen(onFinished: () -> Unit, onBack: () -> Unit) {
                     DeloadBanner()
                 }
                 if (timerState.isRunning || timerState.isPaused) {
-                    RestTimerBar(timerState.secondsRemaining, timerState.isPaused, timerController)
+                    RestTimerBar(timerState.totalSeconds, timerState.secondsRemaining, timerState.isPaused, timerController)
                 }
 
                 when {
@@ -298,7 +298,7 @@ private fun PrCelebrationOverlay(celebration: PrCelebration, onDismiss: () -> Un
 }
 
 @Composable
-private fun RestTimerBar(secondsRemaining: Int, isPaused: Boolean, controller: RestTimerController) {
+private fun RestTimerBar(totalSeconds: Int, secondsRemaining: Int, isPaused: Boolean, controller: RestTimerController) {
     val minutes = secondsRemaining / 60
     val seconds = secondsRemaining % 60
     val urgent = secondsRemaining in 1..5 && !isPaused
@@ -323,7 +323,28 @@ private fun RestTimerBar(secondsRemaining: Int, isPaused: Boolean, controller: R
             color = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.graphicsLayer(scaleX = pulse, scaleY = pulse)
         )
-        Spacer(Modifier.weight(1f))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    String.format(Locale.US, "%d:%02d", minutes, seconds),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.graphicsLayer(scaleX = pulse, scaleY = pulse)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (isPaused) "Paused" else "Rest",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+                )
+            }
+            LinearProgressIndicator(
+                progress = { if (totalSeconds > 0) secondsRemaining.toFloat() / totalSeconds else 0f },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f)
+            )
+        }
         TextButton(onClick = { if (isPaused) controller.resume() else controller.pause() }) {
             Text(if (isPaused) "Resume" else "Pause", color = MaterialTheme.colorScheme.onPrimary)
         }
