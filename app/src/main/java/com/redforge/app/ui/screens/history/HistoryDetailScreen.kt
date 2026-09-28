@@ -3,6 +3,7 @@
 package com.redforge.app.ui.screens.history
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.ArrowBack
@@ -82,7 +83,7 @@ fun HistoryDetailScreen(
                 }
 
                 state.exercises.forEach { exercise ->
-                    ForgeCard(modifier = Modifier.fillMaxWidth()) {
+                    ForgeCard(modifier = Modifier.fillMaxWidth().animateContentSize()) {
                         Text(
                             exercise.name,
                             style = MaterialTheme.typography.titleLarge
