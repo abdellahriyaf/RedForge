@@ -67,7 +67,16 @@ class HomeViewModel(
         val todaySkipped = activeSplit != null &&
             settings.skippedSplitId == activeSplit.id &&
             settings.skippedWorkoutDayStartMillis == todayStart
-        val streak = StreakCalculator.compute(allSessions, nowMillis = today)
+        val streak = StreakCalculator.compute(
+            sessions = allSessions,
+            nowMillis = today,
+            scheduledTrainingDayOrders = days.filter { !it.isRestDay }.map { it.dayOrder }.toSet(),
+            cycleLength = days.size,
+            scheduleAnchorStartMillis = scheduleAnchor,
+            skippedDayStartMillis = settings.skippedWorkoutDayStartMillis.takeIf {
+                settings.skippedSplitId == activeSplit?.id
+            }
+        )
         val todayCompleted = allSessions.any { session ->
             session.completed &&
                 session.splitDayId != null &&
