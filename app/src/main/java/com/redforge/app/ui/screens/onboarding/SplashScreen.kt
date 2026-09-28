@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.redforge.app.R
 import com.redforge.app.ui.theme.ForgeGold
 import com.redforge.app.ui.theme.ForgeGradientEnd
-import com.redforge.app.ui.theme.ForgeGradientStart
+import com.redforge.app.ui.theme.ForgeGradientStart\nimport com.redforge.app.ui.theme.ForgeHeroGradient\nimport com.redforge.app.ui.theme.ForgeGlowGradient
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -60,7 +60,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             .background(Brush.verticalGradient(listOf(ForgeGradientStart, ForgeGradientEnd))),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(contentAlignment = Alignment.Center) {\n            Box(\n                modifier = Modifier\n                    .size(260.dp)\n                    .background(ForgeGlowGradient)\n            )\n            Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
                 imageVector = Icons.Filled.FitnessCenter,
                 contentDescription = null,
