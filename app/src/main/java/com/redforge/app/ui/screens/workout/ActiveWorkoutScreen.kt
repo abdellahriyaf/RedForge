@@ -173,10 +173,20 @@ private fun ExercisePager(
 ) {
     val pagerState = rememberPagerState(pageCount = { blocks.size })
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(blocks.size) {
+        if (blocks.isNotEmpty() && pagerState.currentPage >= blocks.size) {
+            pagerState.scrollToPage(blocks.lastIndex)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Sticky progress header — always shows which exercise you're on.
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp)
+        ) {
             Text(
                 "Exercise ${pagerState.currentPage + 1} of ${blocks.size}",
                 style = MaterialTheme.typography.labelLarge,
@@ -200,39 +210,56 @@ private fun ExercisePager(
         }
 
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
-            val block = blocks[page]
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
-                ExerciseBlockCard(
-                    block = block,
-                    weightUnit = weightUnit,
-                    estimated1RM = vm.estimatedOneRepMax(block.loggedSets),
-                    onLogSet = { weight, reps, warmup, rpe ->
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        vm.logSet(block.exercise.id, weight, reps, warmup, rpe)
-                    },
-                    onDeleteSet = { vm.deleteSet(it) }
-                )
-                Spacer(Modifier.height(20.dp))
+            val block = blocks.getOrNull(page)
+            if (block == null) {
+                Box(Modifier.fillMaxSize())
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                ) {
+                    ExerciseBlockCard(
+                        block = block,
+                        weightUnit = weightUnit,
+                        estimated1RM = vm.estimatedOneRepMax(block.loggedSets),
+                        onLogSet = { weight, reps, warmup, rpe ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            vm.logSet(block.exercise.id, weight, reps, warmup, rpe)
+                        },
+                        onDeleteSet = { vm.deleteSet(it) }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                }
             }
         }
 
-        // Prev/Next as an accessible alternative to swiping.
-        val scope = rememberCoroutineScope()
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             TextButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0)) } },
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            (pagerState.currentPage - 1).coerceAtLeast(0)
+                        )
+                    }
+                },
                 enabled = pagerState.currentPage > 0
             ) { Text("← Previous") }
+
             TextButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(blocks.lastIndex)) } },
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            (pagerState.currentPage + 1).coerceAtMost(blocks.lastIndex)
+                        )
+                    }
+                },
                 enabled = pagerState.currentPage < blocks.lastIndex
             ) { Text("Next →") }
         }
