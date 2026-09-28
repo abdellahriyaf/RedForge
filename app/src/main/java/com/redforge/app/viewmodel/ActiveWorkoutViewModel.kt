@@ -103,6 +103,19 @@ class ActiveWorkoutViewModel(
                 set(java.util.Calendar.SECOND, 0)
                 set(java.util.Calendar.MILLISECOND, 0)
             }.timeInMillis
+            val completedToday = allSessions.any { session ->
+                session.completed &&
+                    session.splitDayId != null &&
+                    days.any { it.id == session.splitDayId } &&
+                    session.startedAt >= todayStart
+            }
+            if (completedToday) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = "Today's workout is already complete. Your next scheduled session will be available tomorrow."
+                )
+                return
+            }
             val skippedToday = settings.skippedSplitId == activeSplit.id &&
                 settings.skippedWorkoutDayStartMillis == todayStart
             if (skippedToday) {
