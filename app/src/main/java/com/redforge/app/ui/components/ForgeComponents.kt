@@ -2,6 +2,8 @@ package com.redforge.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Column
@@ -15,11 +17,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.redforge.app.ui.theme.ForgeSurfaceGradient
 
-/** RedForge's primary CTA button: bold red, a gentle press-scale animation for tactile feedback. */
+/** RedForge's primary CTA button: bold red with tactile press feedback. */
 @Composable
 fun ForgeButton(
     text: String,
@@ -29,7 +35,11 @@ fun ForgeButton(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(if (pressed) 0.96f else 1f, spring(), label = "button_scale")
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = spring(stiffness = 700f),
+        label = "button_scale"
+    )
 
     Button(
         onClick = onClick,
@@ -50,11 +60,19 @@ fun ForgeButton(
 }
 
 @Composable
-fun ForgeSectionHeader(title: String, subtitle: String? = null, modifier: Modifier = Modifier) {
+fun ForgeSectionHeader(
+    title: String,
+    subtitle: String? = null,
+    modifier: Modifier = Modifier
+) {
     Column(modifier = modifier.padding(bottom = 8.dp)) {
         Text(title, style = MaterialTheme.typography.headlineMedium)
         if (subtitle != null) {
-            Text(subtitle, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -65,12 +83,39 @@ fun ForgeCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    ElevatedCard(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-        onClick = { onClick?.invoke() }
-    ) {
-        Column(modifier = Modifier.padding(16.dp), content = content)
+    val shape = RoundedCornerShape(18.dp)
+    val decoratedModifier = modifier
+        .shadow(
+            elevation = 5.dp,
+            shape = shape,
+            clip = false,
+            ambientColor = Color.Black.copy(alpha = 0.30f),
+            spotColor = Color.Black.copy(alpha = 0.42f)
+        )
+        .clip(shape)
+        .background(ForgeSurfaceGradient)
+        .border(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.30f),
+            shape = shape
+        )
+
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = decoratedModifier,
+            shape = shape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), content = content)
+        }
+    } else {
+        Card(
+            modifier = decoratedModifier,
+            shape = shape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), content = content)
+        }
     }
 }
