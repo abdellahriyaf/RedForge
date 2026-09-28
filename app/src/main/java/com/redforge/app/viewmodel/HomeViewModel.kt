@@ -47,8 +47,9 @@ class HomeViewModel(
         splitRepository.observeActiveSplit(),
         workoutRepository.observeInProgressSession(),
         workoutRepository.observeAllSessions(),
+        workoutRepository.observeAllSets(),
         settingsDataStore.settingsFlow
-    ) { activeSplit, inProgress, allSessions, settings ->
+    ) { activeSplit, inProgress, allSessions, allSets, settings ->
         val days = activeSplit?.let { splitRepository.observeDays(it.id).first() }.orEmpty()
         val today = System.currentTimeMillis()
         val scheduleAnchor = settings.scheduleAnchorStartMillis.takeIf {
@@ -75,20 +76,17 @@ class HomeViewModel(
         }
         val weekStart = startOfWeekMillis(today)
         val weekSessions = allSessions.filter { it.completed && it.startedAt >= weekStart && it.startedAt <= today }
-        var weekSets = 0
-        var weekVolume = 0.0
-        weekSessions.forEach { session ->
-            val sets = workoutRepository.getSetsOnce(session.id)
-            weekSets += sets.size
-            weekVolume += StrengthFormulas.totalVolume(sets)
-        }
+        val weekSessionIds = weekSessions.map { it.id }.toSet()
+        val weekSetsList = allSets.filter { it.workoutSessionId in weekSessionIds }
+        val weekSets = weekSetsList.size
+        val weekVolume = StrengthFormulas.totalVolume(weekSetsList)
 
         HomeUiState(
             activeSplit = activeSplit,
             nextDay = planned,
             inProgressSession = inProgress,
             todayCompleted = todayCompleted,
-            currentStreak = streak.current,
+            currentStreak = if (todaySkipped) 0 else streak.current,
             longestStreak = streak.longest,
             weekWorkouts = weekSessions.size,
             weekSets = weekSets,
