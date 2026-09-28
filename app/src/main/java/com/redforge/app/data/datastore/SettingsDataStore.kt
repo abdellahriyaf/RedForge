@@ -20,7 +20,9 @@ data class ForgeSettings(
     val timerVibrationEnabled: Boolean = true,
     val lastCelebratedMilestone: Int = 0,
     val scheduleAnchorSplitId: Long? = null,
-    val scheduleAnchorStartMillis: Long? = null
+    val scheduleAnchorStartMillis: Long? = null,
+    val skippedSplitId: Long? = null,
+    val skippedWorkoutDayStartMillis: Long? = null
 )
 
 /**
@@ -41,6 +43,8 @@ class SettingsDataStore(private val context: Context) {
         val LAST_CELEBRATED_MILESTONE = intPreferencesKey("last_celebrated_milestone")
         val SCHEDULE_ANCHOR_SPLIT_ID = longPreferencesKey("schedule_anchor_split_id")
         val SCHEDULE_ANCHOR_START_MILLIS = longPreferencesKey("schedule_anchor_start_millis")
+        val SKIPPED_SPLIT_ID = longPreferencesKey("skipped_split_id")
+        val SKIPPED_WORKOUT_DAY_START_MILLIS = longPreferencesKey("skipped_workout_day_start_millis")
     }
 
     val settingsFlow: Flow<ForgeSettings> = context.dataStore.data.map { prefs ->
@@ -54,7 +58,9 @@ class SettingsDataStore(private val context: Context) {
             timerVibrationEnabled = prefs[Keys.TIMER_VIBRATION] ?: true,
             lastCelebratedMilestone = prefs[Keys.LAST_CELEBRATED_MILESTONE] ?: 0,
             scheduleAnchorSplitId = prefs[Keys.SCHEDULE_ANCHOR_SPLIT_ID],
-            scheduleAnchorStartMillis = prefs[Keys.SCHEDULE_ANCHOR_START_MILLIS]
+            scheduleAnchorStartMillis = prefs[Keys.SCHEDULE_ANCHOR_START_MILLIS],
+            skippedSplitId = prefs[Keys.SKIPPED_SPLIT_ID],
+            skippedWorkoutDayStartMillis = prefs[Keys.SKIPPED_WORKOUT_DAY_START_MILLIS]
         )
     }
 
@@ -94,6 +100,20 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { prefs ->
             prefs[Keys.SCHEDULE_ANCHOR_SPLIT_ID] = splitId
             prefs[Keys.SCHEDULE_ANCHOR_START_MILLIS] = startOfDayMillis
+        }
+    }
+
+    suspend fun skipWorkoutDay(splitId: Long, dayStartMillis: Long) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SKIPPED_SPLIT_ID] = splitId
+            prefs[Keys.SKIPPED_WORKOUT_DAY_START_MILLIS] = dayStartMillis
+        }
+    }
+
+    suspend fun clearSkippedWorkoutDay() {
+        context.dataStore.edit { prefs ->
+            prefs.remove(Keys.SKIPPED_SPLIT_ID)
+            prefs.remove(Keys.SKIPPED_WORKOUT_DAY_START_MILLIS)
         }
     }
 
