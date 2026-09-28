@@ -135,28 +135,7 @@ fun HomeScreen(
                 onClick = onOpenHistory
             )
 
-            Spacer(Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                QuickActionCard(
-                    icon = Icons.Outlined.CalendarMonth,
-                    label = "Splits",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenSplits
-                )
-                QuickActionCard(
-                    icon = Icons.Outlined.ShowChart,
-                    label = "Progress",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenProgress
-                )
-                QuickActionCard(
-                    icon = Icons.Outlined.History,
-                    label = "History",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenHistory
-                )
-            }
+            Spacer(Modifier.height(4.dp))
         }
 
         milestone?.let { days ->
