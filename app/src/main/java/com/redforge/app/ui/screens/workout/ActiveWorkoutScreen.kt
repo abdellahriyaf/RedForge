@@ -317,12 +317,6 @@ private fun RestTimerBar(totalSeconds: Int, secondsRemaining: Int, isPaused: Boo
     ) {
         Icon(Icons.Filled.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
         Spacer(Modifier.width(8.dp))
-        Text(
-            String.format(Locale.US, "%d:%02d", minutes, seconds),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.graphicsLayer(scaleX = pulse, scaleY = pulse)
-        )
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
