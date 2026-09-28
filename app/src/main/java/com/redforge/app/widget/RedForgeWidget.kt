@@ -7,8 +7,10 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.updateAll
 import androidx.glance.background
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -169,6 +171,18 @@ class RedForgeWidget : GlanceAppWidget() {
                                 .clickable(actionStartActivity(startIntent)),
                             style = TextStyle(
                                 color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Text(
+                            "SKIP",
+                            modifier = GlanceModifier
+                                .padding(vertical = 8.dp, horizontal = 10.dp)
+                                .clickable(actionRunCallback<SkipWorkoutAction>()),
+                            style = TextStyle(
+                                color = ColorProvider(Color(0xFFB7B7C0)),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
