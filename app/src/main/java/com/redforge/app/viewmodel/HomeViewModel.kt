@@ -28,6 +28,7 @@ data class HomeUiState(
     val weekVolume: Int = 0,
     val settings: ForgeSettings = ForgeSettings(),
     val scheduleNotStarted: Boolean = false,
+    val todaySkipped: Boolean = false,
     val loading: Boolean = true
 )
 
@@ -61,6 +62,10 @@ class HomeViewModel(
         )
         val scheduleNotStarted = activeSplit != null &&
             scheduleAnchor?.let { SplitScheduler.isBeforeAnchor(it, today) } == true
+        val todayStart = startOfDayMillis(today)
+        val todaySkipped = activeSplit != null &&
+            settings.skippedSplitId == activeSplit.id &&
+            settings.skippedWorkoutDayStartMillis == todayStart
         val streak = StreakCalculator.compute(allSessions, nowMillis = today)
         val todayCompleted = allSessions.any { session ->
             session.completed &&
@@ -90,6 +95,7 @@ class HomeViewModel(
             weekVolume = StrengthFormulas.displayRounded(weekVolume),
             settings = settings,
             scheduleNotStarted = scheduleNotStarted,
+            todaySkipped = todaySkipped,
             loading = false
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
@@ -112,6 +118,20 @@ class HomeViewModel(
         _milestoneEvent.value = null
     }
 
+    fun skipTodayWorkout() {
+        viewModelScope.launch {
+            val split = uiState.value.activeSplit ?: return@launch
+            if (uiState.value.inProgressSession != null || uiState.value.todayCompleted) return@launch
+            settingsDataStore.skipWorkoutDay(split.id, startOfDayMillis(System.currentTimeMillis()))
+        }
+    }
+
+    fun resetInProgressWorkout() {
+        viewModelScope.launch {
+            uiState.value.inProgressSession?.let { workoutRepository.deleteSession(it) }
+        }
+    }
+
     private fun isSameCalendarDay(firstMillis: Long, secondMillis: Long): Boolean {
         val a = Calendar.getInstance().apply { timeInMillis = firstMillis }
         val b = Calendar.getInstance().apply { timeInMillis = secondMillis }
@@ -119,6 +139,14 @@ class HomeViewModel(
             a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
             a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
     }
+
+    private fun startOfDayMillis(nowMillis: Long): Long = Calendar.getInstance().apply {
+        timeInMillis = nowMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
 
     private fun startOfWeekMillis(nowMillis: Long): Long {
         val calendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
