@@ -6,12 +6,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -94,7 +97,10 @@ fun SettingsScreen() {
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { timerExpanded = !timerExpanded }
+                    .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
@@ -105,8 +111,11 @@ fun SettingsScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = { timerExpanded = !timerExpanded }) {
-                    Text(if (timerExpanded) "Collapse" else "Expand")
+                IconButton(onClick = { timerExpanded = !timerExpanded }) {
+                    Icon(
+                        if (timerExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                        contentDescription = if (timerExpanded) "Collapse timer settings" else "Expand timer settings"
+                    )
                 }
             }
             AnimatedVisibility(visible = timerExpanded) {
@@ -161,7 +170,10 @@ fun SettingsScreen() {
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { backupExpanded = !backupExpanded }
+                    .padding(vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(Modifier.weight(1f)) {
@@ -172,8 +184,11 @@ fun SettingsScreen() {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = { backupExpanded = !backupExpanded }) {
-                    Text(if (backupExpanded) "Collapse" else "Expand")
+                IconButton(onClick = { backupExpanded = !backupExpanded }) {
+                    Icon(
+                        if (backupExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                        contentDescription = if (backupExpanded) "Collapse backup and restore" else "Expand backup and restore"
+                    )
                 }
             }
             AnimatedVisibility(visible = backupExpanded) {
