@@ -3,8 +3,11 @@ package com.redforge.app.navigation
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ShowChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,6 +49,9 @@ import com.redforge.app.viewmodel.redForgeViewModel
 
 private val bottomNavRoutes = setOf(
     NavRoutes.HOME,
+    NavRoutes.SPLIT_LIST,
+    NavRoutes.PROGRESS_DASHBOARD,
+    NavRoutes.HISTORY,
     NavRoutes.SETTINGS
 )
 
@@ -246,6 +252,24 @@ private fun RedForgeBottomBar(navController: NavHostController) {
             onClick = { navController.navigateBottom(NavRoutes.HOME) },
             icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
             label = { Text("Home") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == NavRoutes.SPLIT_LIST,
+            onClick = { navController.navigateBottom(NavRoutes.SPLIT_LIST) },
+            icon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = "Splits") },
+            label = { Text("Splits") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == NavRoutes.PROGRESS_DASHBOARD,
+            onClick = { navController.navigateBottom(NavRoutes.PROGRESS_DASHBOARD) },
+            icon = { Icon(Icons.Outlined.ShowChart, contentDescription = "Progress") },
+            label = { Text("Progress") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == NavRoutes.HISTORY,
+            onClick = { navController.navigateBottom(NavRoutes.HISTORY) },
+            icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
+            label = { Text("History") }
         )
         NavigationBarItem(
             selected = currentRoute == NavRoutes.SETTINGS,
