@@ -273,11 +273,21 @@ private fun WorkoutHeroCard(
 private fun StreakChip(currentStreak: Int, longestStreak: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     ForgeCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Icon(painterResource(R.drawable.ic_flame_streak), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.width(10.dp))
+            Icon(
+                painterResource(R.drawable.ic_flame_streak),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(34.dp)
+            )
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("$currentStreak-day streak", style = MaterialTheme.typography.titleMedium)
-                Text("Best: $longestStreak", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "$currentStreak",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Black,
+                    color = ForgeRed
+                )
+                Text("DAY STREAK  ·  BEST $longestStreak", style = MaterialTheme.typography.labelSmall)
             }
             TextButton(onClick = onClick) { Text("Share") }
         }
