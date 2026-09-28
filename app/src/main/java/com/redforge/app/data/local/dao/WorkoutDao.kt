@@ -60,6 +60,9 @@ interface WorkoutDao {
     """)
     suspend fun getRecentSetsForExercise(exerciseId: Long, limit: Int = 50): List<SetEntry>
 
+    @Query("SELECT * FROM set_entries ORDER BY loggedAt DESC")
+    fun observeAllSets(): Flow<List<SetEntry>>
+
     @Query("SELECT * FROM set_entries WHERE exerciseId = :exerciseId ORDER BY loggedAt DESC")
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>>
 
