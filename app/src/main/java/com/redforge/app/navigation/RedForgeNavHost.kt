@@ -1,5 +1,6 @@
 package com.redforge.app.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -9,12 +10,16 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.ShowChart
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import com.redforge.app.ui.theme.ForgeBlack
+import com.redforge.app.ui.theme.ForgeCharcoal
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -62,6 +67,12 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
     val currentRoute = backStackEntry?.destination?.route
 
     Scaffold(
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                listOf(ForgeBlack, ForgeCharcoal, ForgeBlack)
+            )
+        ),
         bottomBar = {
             if (currentRoute in bottomNavRoutes) {
                 RedForgeBottomBar(navController)
