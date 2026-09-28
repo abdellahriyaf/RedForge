@@ -95,7 +95,6 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
                 HomeScreen(
                     onStartWorkout = { navController.navigate(NavRoutes.ACTIVE_WORKOUT) },
                     onResumeWorkout = { navController.navigate(NavRoutes.ACTIVE_WORKOUT) },
-                    onResetWorkout = { },
                     onOpenSplits = { navController.navigate(NavRoutes.SPLIT_LIST) },
                     onOpenProgress = { navController.navigate(NavRoutes.PROGRESS_DASHBOARD) },
                     onOpenHistory = { navController.navigate(NavRoutes.HISTORY) },
