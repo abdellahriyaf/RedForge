@@ -45,6 +45,8 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun getRecentSetsForExercise(exerciseId: Long, limit: Int = 50) =
         dao.getRecentSetsForExercise(exerciseId, limit)
 
+    fun observeAllSets(): Flow<List<SetEntry>> = dao.observeAllSets()
+
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>> =
         dao.observeAllSetsForExercise(exerciseId)
 }
