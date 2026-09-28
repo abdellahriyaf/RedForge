@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import com.redforge.app.ui.theme.ForgeBlack
 import com.redforge.app.ui.theme.ForgeCharcoal
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.AnimatedContentTransitionScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
