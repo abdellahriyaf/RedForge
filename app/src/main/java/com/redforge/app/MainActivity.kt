@@ -16,11 +16,15 @@ import com.redforge.app.navigation.RedForgeApp
 import com.redforge.app.ui.theme.RedForgeTheme
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    override fun onStart() {
+        super.onStart()
         lifecycleScope.launch {
             RedForgeWidget().updateAll(applicationContext)
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         val app = application as RedForgeApplication
         setContent {
             val settings by app.settingsDataStore.settingsFlow.collectAsState(initial = com.redforge.app.data.datastore.ForgeSettings())
