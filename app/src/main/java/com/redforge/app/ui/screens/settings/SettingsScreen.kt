@@ -4,6 +4,7 @@ package com.redforge.app.ui.screens.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +41,8 @@ fun SettingsScreen() {
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importError by remember { mutableStateOf(false) }
     var importMessage by remember { mutableStateOf<String?>(null) }
+    var timerExpanded by remember { mutableStateOf(true) }
+    var backupExpanded by remember { mutableStateOf(false) }
 
     val importPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -90,32 +93,49 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Default rest time", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Slider(
-                value = state.defaultRestSeconds.toFloat(),
-                onValueChange = { vm.setDefaultRest(it.toInt()) },
-                valueRange = 15f..300f,
-                steps = 18
-            )
-            Text("${state.defaultRestSeconds} seconds", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                "Used when an exercise has no custom rest prescription.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            SwitchRow("Timer sound", state.timerSoundEnabled) { vm.setTimerSound(it) }
-            SwitchRow("Timer vibration", state.timerVibrationEnabled) { vm.setTimerVibration(it) }
-            SwitchRow("Dark theme", state.darkThemeForced) { vm.setDarkForced(it) }
-            Text(
-                if (state.darkThemeForced) "RedForge always uses its dark theme." else "RedForge follows your system light/dark theme.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Timer", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Rest duration, sound, and vibration",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = { timerExpanded = !timerExpanded }) {
+                    Text(if (timerExpanded) "Collapse" else "Expand")
+                }
+            }
+            AnimatedVisibility(visible = timerExpanded) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Default rest time", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Slider(
+                        value = state.defaultRestSeconds.toFloat(),
+                        onValueChange = { vm.setDefaultRest(it.toInt()) },
+                        valueRange = 15f..300f,
+                        steps = 18
+                    )
+                    Text("${state.defaultRestSeconds} seconds", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Used when an exercise has no custom rest prescription.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SwitchRow("Timer sound", state.timerSoundEnabled) { vm.setTimerSound(it) }
+                    SwitchRow("Timer vibration", state.timerVibrationEnabled) { vm.setTimerVibration(it) }
+                    Text(
+                        "Timer completion uses a short notification tone and a tactile vibration pattern.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -140,14 +160,36 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "RedForge has no automatic cloud sync. Export a backup file whenever you want a safety copy, or before switching phones — you choose where it's saved.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
-            )
-            Column(
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Export or restore your local RedForge data",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                TextButton(onClick = { backupExpanded = !backupExpanded }) {
+                    Text(if (backupExpanded) "Collapse" else "Expand")
+                }
+            }
+            AnimatedVisibility(visible = backupExpanded) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "RedForge has no automatic cloud sync. Export a backup whenever you want a safety copy, or before switching phones.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -212,6 +254,9 @@ fun SettingsScreen() {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                }
+            }
+                    }
                 }
             }
         }
