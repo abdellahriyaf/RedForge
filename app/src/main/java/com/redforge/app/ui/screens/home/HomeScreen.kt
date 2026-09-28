@@ -176,7 +176,7 @@ private fun WorkoutHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.linearGradient(listOf(ForgeRedDark, ForgeRed)))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(24.dp)
     ) {
         Column {
@@ -189,14 +189,14 @@ private fun WorkoutHeroCard(
                     else -> "TODAY'S SESSION"
                 },
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.85f)
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 sessionOrDayName ?: "Build a split to get started",
                 style = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
-                color = Color.White,
-                fontWeight = FontWeight.Black
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -209,19 +209,19 @@ private fun WorkoutHeroCard(
                     else -> "Show up. Log it. Beat it next time."
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.82f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(18.dp))
             if (inProgress) {
                 Button(
                     onClick = onStartOrResume,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ForgeRed),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
                     modifier = Modifier.fillMaxWidth().height(52.dp)
                 ) { Text("Resume workout", fontWeight = FontWeight.Bold) }
                 TextButton(
                     onClick = onResetWorkout,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
-                ) { Text("Reset workout", color = Color.White.copy(alpha = 0.78f)) }
+                ) { Text("Reset workout", color = MaterialTheme.colorScheme.onSurfaceVariant) }
             } else {
                 Button(
                     onClick = onStartOrResume,
@@ -244,7 +244,7 @@ private fun WorkoutHeroCard(
                     TextButton(
                         onClick = onSkipToday,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) { Text("Skip today's workout", color = Color.White.copy(alpha = 0.72f)) }
+                    ) { Text("Skip today's workout", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }
@@ -266,8 +266,8 @@ private fun StreakChip(currentStreak: Int, longestStreak: Int, onClick: () -> Un
                 Text(
                     "$currentStreak",
                     style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Black,
-                    color = ForgeRed
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text("DAY STREAK  ·  BEST $longestStreak", style = MaterialTheme.typography.labelSmall)
             }
@@ -314,7 +314,7 @@ private fun MilestoneCelebrationOverlay(days: Int, onDismiss: () -> Unit) {
                 modifier = Modifier
                     .padding(32.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Brush.linearGradient(listOf(ForgeGradientStart, ForgeGradientEnd)))
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
