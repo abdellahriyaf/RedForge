@@ -43,7 +43,6 @@ import com.redforge.app.ui.components.ForgeButton
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.theme.ForgeGold
 import com.redforge.app.ui.theme.ForgeHeroGradient
-import com.redforge.app.ui.theme.ForgeSurfaceGradient
 import com.redforge.app.ui.theme.ForgeGradientEnd
 import com.redforge.app.ui.theme.ForgeGradientStart
 import com.redforge.app.ui.theme.ForgeRed
