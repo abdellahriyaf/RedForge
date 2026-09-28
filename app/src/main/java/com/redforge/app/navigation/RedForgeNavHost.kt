@@ -1,9 +1,5 @@
 package com.redforge.app.navigation
 
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -25,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.redforge.app.ui.theme.ForgeBlack
 import com.redforge.app.ui.theme.ForgeCharcoal
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.AnimatedContentTransitionScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
