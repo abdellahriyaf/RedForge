@@ -1,5 +1,9 @@
 package com.redforge.app.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -22,6 +26,7 @@ import com.redforge.app.ui.theme.ForgeBlack
 import com.redforge.app.ui.theme.ForgeCharcoal
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.AnimatedContentTransitionScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -82,6 +87,10 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
         NavHost(
             navController = navController,
             startDestination = NavRoutes.SPLASH,
+            enterTransition = { fadeIn(tween(180)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(220)) },
+            exitTransition = { fadeOut(tween(160)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(200)) },
+            popEnterTransition = { fadeIn(tween(180)) + slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(220)) },
+            popExitTransition = { fadeOut(tween(160)) + slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(200)) },
             modifier = Modifier.padding(if (currentRoute in bottomNavRoutes) padding else PaddingValues(0.dp))
         ) {
             composable(NavRoutes.SPLASH) {
