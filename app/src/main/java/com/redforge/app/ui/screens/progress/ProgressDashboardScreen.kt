@@ -2,7 +2,9 @@ package com.redforge.app.ui.screens.progress
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.animateItemPlacement
 import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -11,6 +13,7 @@ import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -98,9 +101,12 @@ fun ProgressDashboardScreen(
 private fun ExerciseProgressCard(
     summary: ExerciseProgressSummary,
     onClick: () -> Unit
-) {
+ ) {
+    val best1Rm by animateIntAsState(summary.bestEstimated1RM, label = "best_1rm")
+    val totalVolume by animateIntAsState(summary.totalVolumeAllTime, label = "total_volume")
+
     ForgeCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().animateItemPlacement(),
         onClick = onClick
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -127,7 +133,7 @@ private fun ExerciseProgressCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text("${summary.bestEstimated1RM}", style = MaterialTheme.typography.headlineMedium)
+                Text("$best1Rm", style = MaterialTheme.typography.headlineMedium)
             }
             Column(Modifier.weight(1f)) {
                 Text(
@@ -135,7 +141,7 @@ private fun ExerciseProgressCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text("${summary.totalVolumeAllTime}", style = MaterialTheme.typography.headlineMedium)
+                Text("$totalVolume", style = MaterialTheme.typography.headlineMedium)
             }
             Column(Modifier.weight(1f)) {
                 Text(
