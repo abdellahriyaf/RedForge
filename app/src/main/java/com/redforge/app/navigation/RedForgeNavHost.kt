@@ -157,10 +157,6 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
                 ExerciseLibraryScreen(
                     pickerMode = pickerMode,
                     onPick = { exercise ->
-                        // The previous entry (day editor) owns adding it — simplest robust approach
-                        // without a shared ViewModel is to pop back and let the day editor's own
-                        // FAB flow re-trigger; here we directly add via the day editor's ViewModel
-                        // by popping back with a result.
                         navController.previousBackStackEntry?.savedStateHandle?.set("picked_exercise_id", exercise.id)
                         navController.popBackStack()
                     },
@@ -247,7 +243,11 @@ private fun RedForgeBottomBar(navController: NavHostController) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    NavigationBar(\n        modifier = Modifier.shadow(10.dp),\n        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),\n        tonalElevation = 8.dp\n    ) {
+    NavigationBar(
+        modifier = Modifier.shadow(10.dp),
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+        tonalElevation = 8.dp
+    ) {
         NavigationBarItem(
             selected = currentRoute == NavRoutes.HOME,
             onClick = { navController.navigateBottom(NavRoutes.HOME) },
