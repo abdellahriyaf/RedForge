@@ -136,19 +136,19 @@ fun HomeScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 QuickActionCard(
-                    icon = Icons.Filled.CalendarViewWeek,
+                    icon = Icons.Outlined.CalendarViewWeek,
                     label = "Splits",
                     modifier = Modifier.weight(1f),
                     onClick = onOpenSplits
                 )
                 QuickActionCard(
-                    icon = Icons.Filled.InsertChartOutlined,
+                    icon = Icons.Outlined.InsertChartOutlined,
                     label = "Progress",
                     modifier = Modifier.weight(1f),
                     onClick = onOpenProgress
                 )
                 QuickActionCard(
-                    icon = Icons.Filled.History,
+                    icon = Icons.Outlined.History,
                     label = "History",
                     modifier = Modifier.weight(1f),
                     onClick = onOpenHistory
