@@ -14,16 +14,16 @@ val ForgeTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Black,
-        fontSize = 40.sp,
-        lineHeight = 44.sp,
-        letterSpacing = (-0.7).sp
+        fontSize = 38.sp,
+        lineHeight = 42.sp,
+        letterSpacing = (-0.9).sp
     ),
     headlineLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.ExtraBold,
-        fontSize = 28.sp,
-        lineHeight = 34.sp,
-        letterSpacing = (-0.25).sp
+        fontSize = 27.sp,
+        lineHeight = 33.sp,
+        letterSpacing = (-0.35).sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -49,9 +49,9 @@ val ForgeTypography = Typography(
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.sp
+        fontSize = 15.sp,
+        lineHeight = 22.sp,
+        letterSpacing = 0.05.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -72,6 +72,6 @@ val ForgeTypography = Typography(
         fontWeight = FontWeight.Medium,
         fontSize = 11.sp,
         lineHeight = 15.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.65.sp
     )
 )
