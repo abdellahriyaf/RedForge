@@ -1,6 +1,7 @@
 package com.redforge.app
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +20,11 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         lifecycleScope.launch {
-            RedForgeWidget().updateAll(applicationContext)
+            runCatching {
+                RedForgeWidget().updateAll(applicationContext)
+            }.onFailure {
+                Log.e("RedForge", "Widget refresh failed; continuing app startup", it)
+            }
         }
     }
 
@@ -30,9 +35,9 @@ class MainActivity : ComponentActivity() {
             val settings by app.settingsDataStore.settingsFlow.collectAsState(initial = com.redforge.app.data.datastore.ForgeSettings())
             RedForgeTheme(forceDark = settings.darkThemeForced) {
                 Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = androidx.compose.ui.graphics.Color.Transparent
-        ) {
+                    modifier = Modifier.fillMaxSize(),
+                    color = androidx.compose.ui.graphics.Color.Transparent
+                ) {
                     RedForgeApp(openWorkoutOnLaunch = intent.getBooleanExtra("start_workout", false))
                 }
             }

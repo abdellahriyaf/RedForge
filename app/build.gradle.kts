@@ -12,8 +12,8 @@ android {
         applicationId = "com.redforge.app.v06"
         minSdk = 24
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 68
+        versionName = "0.6.8"
 
         vectorDrawables.useSupportLibrary = true
     }

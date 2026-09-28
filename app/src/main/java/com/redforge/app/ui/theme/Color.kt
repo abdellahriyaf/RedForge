@@ -16,13 +16,13 @@ val ForgeWhite = Color(0xFFF5F5F7)
 val ForgeGold = Color(0xFFFFB020)
 val ForgeGreen = Color(0xFF3DDC84)
 
-// Gradient stops used for headers, hero cards, splash, and highlighted surfaces.
-val ForgeGradientStart = Color(0xFF2A0002)
-val ForgeGradientMid = Color(0xFFB30F15)
+// Reserved for intentional hero/splash accents; keep the app body surface neutral.
+val ForgeGradientStart = Color(0xFF1B0D0F)
+val ForgeGradientMid = Color(0xFF57151A)
 val ForgeGradientEnd = Color(0xFF0B0B0D)
 
 val ForgeHeroGradient = Brush.linearGradient(
-    colors = listOf(ForgeGradientStart, ForgeRedDark, ForgeRed, ForgeGradientEnd)
+    colors = listOf(ForgeGradientStart, ForgeGradientMid, ForgeRedDark, ForgeGradientEnd)
 )
 
 val ForgeSurfaceGradient = Brush.linearGradient(
@@ -30,5 +30,5 @@ val ForgeSurfaceGradient = Brush.linearGradient(
 )
 
 val ForgeGlowGradient = Brush.radialGradient(
-    colors = listOf(ForgeRed.copy(alpha = 0.28f), Color.Transparent)
+    colors = listOf(ForgeRed.copy(alpha = 0.12f), Color.Transparent)
 )

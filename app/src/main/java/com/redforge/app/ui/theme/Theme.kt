@@ -20,7 +20,7 @@ import androidx.core.view.WindowCompat
 private val ForgeDarkColorScheme = darkColorScheme(
     primary = ForgeRed,
     onPrimary = ForgeWhite,
-    primaryContainer = ForgeRedDark,
+    primaryContainer = Color(0xFF3A1114),
     onPrimaryContainer = ForgeWhite,
     secondary = ForgeGold,
     onSecondary = ForgeBlack,
@@ -29,7 +29,6 @@ private val ForgeDarkColorScheme = darkColorScheme(
     surface = ForgeSurface,
     onSurface = ForgeWhite,
     surfaceVariant = ForgeSurfaceHigh,
-    surfaceTint = ForgeRed,
     onSurfaceVariant = ForgeAsh,
     error = ForgeRedBright,
     onError = ForgeWhite,
@@ -52,7 +51,7 @@ private val ForgeLightColorScheme = lightColorScheme(
 @Composable
 fun RedForgeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    forceDark: Boolean = true, // app default: always energetic dark mode unless user overrides in Settings
+    forceDark: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val useDark = forceDark || darkTheme
