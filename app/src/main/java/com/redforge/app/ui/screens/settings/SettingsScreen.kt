@@ -44,7 +44,7 @@ fun SettingsScreen() {
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importError by remember { mutableStateOf(false) }
     var importMessage by remember { mutableStateOf<String?>(null) }
-    var timerExpanded by remember { mutableStateOf(true) }
+    var timerExpanded by remember { mutableStateOf(false) }
     var backupExpanded by remember { mutableStateOf(false) }
 
     val importPicker = rememberLauncherForActivityResult(
