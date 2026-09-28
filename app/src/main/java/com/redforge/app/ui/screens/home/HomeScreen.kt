@@ -53,7 +53,6 @@ import kotlinx.coroutines.delay
 fun HomeScreen(
     onStartWorkout: () -> Unit,
     onResumeWorkout: () -> Unit,
-    onResetWorkout: () -> Unit,
     onOpenSplits: () -> Unit,
     onOpenProgress: () -> Unit,
     onOpenHistory: () -> Unit,
