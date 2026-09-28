@@ -22,11 +22,11 @@ val ForgeGradientMid = Color(0xFFB30F15)
 val ForgeGradientEnd = Color(0xFF0B0B0D)
 
 val ForgeHeroGradient = Brush.linearGradient(
-    colors = listOf(ForgeGradientStart, ForgeRedDark, ForgeRed)
+    colors = listOf(ForgeGradientStart, ForgeRedDark, ForgeRed, ForgeGradientEnd)
 )
 
 val ForgeSurfaceGradient = Brush.linearGradient(
-    colors = listOf(ForgeSurfaceHigh, ForgeSurface)
+    colors = listOf(ForgeSurfaceHigh, ForgeSurface, ForgeCharcoal)
 )
 
 val ForgeGlowGradient = Brush.radialGradient(
