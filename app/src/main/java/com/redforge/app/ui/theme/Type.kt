@@ -12,23 +12,23 @@ import androidx.compose.ui.unit.sp
  */
 val ForgeTypography = Typography(
     displayLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Black,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
         fontSize = 38.sp,
         lineHeight = 42.sp,
         letterSpacing = (-0.9).sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.ExtraBold,
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
         fontSize = 27.sp,
         lineHeight = 33.sp,
         letterSpacing = (-0.35).sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 22.sp,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 23.sp,
         lineHeight = 28.sp,
         letterSpacing = 0.sp
     ),
@@ -41,7 +41,7 @@ val ForgeTypography = Typography(
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         lineHeight = 21.sp,
         letterSpacing = 0.sp
