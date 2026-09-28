@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -136,13 +137,13 @@ fun HomeScreen(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 QuickActionCard(
-                    icon = Icons.Outlined.CalendarViewWeek,
+                    icon = Icons.Outlined.CalendarMonth,
                     label = "Splits",
                     modifier = Modifier.weight(1f),
                     onClick = onOpenSplits
                 )
                 QuickActionCard(
-                    icon = Icons.Outlined.InsertChartOutlined,
+                    icon = Icons.Outlined.ShowChart,
                     label = "Progress",
                     modifier = Modifier.weight(1f),
                     onClick = onOpenProgress
