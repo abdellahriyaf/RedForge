@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.animateItemPlacement
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -70,7 +71,7 @@ private fun HistoryCard(
     onClick: () -> Unit
 ) {
     ForgeCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().animateItemPlacement(),
         onClick = onClick
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
