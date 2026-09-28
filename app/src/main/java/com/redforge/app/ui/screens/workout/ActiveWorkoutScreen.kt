@@ -48,6 +48,7 @@ import com.redforge.app.ui.components.EmberEmptyState
 import com.redforge.app.ui.components.ForgeButton
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.theme.ForgeGold
+import com.redforge.app.ui.theme.ForgeHeroGradient
 import com.redforge.app.ui.theme.ForgeGreen
 import com.redforge.app.util.RestTimerController
 import com.redforge.app.viewmodel.ActiveWorkoutViewModel
@@ -338,7 +339,7 @@ private fun RestTimerBar(totalSeconds: Int, secondsRemaining: Int, isPaused: Boo
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+             .background(ForgeHeroGradient)
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
