@@ -139,7 +139,7 @@ class RedForgeWidget : GlanceAppWidget() {
                             modifier = GlanceModifier
                                 .padding(vertical = 8.dp, horizontal = 10.dp)
                                 .background(Color(0xFFE4141B))
-                                .clickable(actionStartActivity(openIntent)),
+                                .clickable(actionStartActivity(startIntent)),
                             style = TextStyle(
                                 color = ColorProvider(Color.White),
                                 fontWeight = FontWeight.Bold,
