@@ -81,49 +81,53 @@ class ExerciseProgressDetailViewModel(
 
     init {
         viewModelScope.launch {
-            load()
-        }
-    }
-
-    private suspend fun load() {
-        val exercise = exerciseRepository.getById(exerciseId)
-        if (exercise == null) {
-            _uiState.value = UiState(
-                loading = false,
-                error = "Exercise not found."
-            )
-            return
-        }
-
-        val sessions = workoutRepository.observeAllSessions().first()
-            .filter { it.completed }
-            .associateBy { it.id }
-
-        val sets = workoutRepository.observeAllSetsForExercise(exerciseId).first()
-            .filter { sessions.containsKey(it.workoutSessionId) }
-            .filter { !it.isWarmup }
-            .groupBy { it.workoutSessionId }
-
-        val points = sets.mapNotNull { (sessionId, sessionSets) ->
-            val session = sessions[sessionId] ?: return@mapNotNull null
-            ExerciseTrendPoint(
-                sessionId = sessionId,
-                date = session.startedAt,
-                estimated1RM = StrengthFormulas.displayRounded(
-                    StrengthFormulas.bestEstimated1RM(sessionSets)
-                ),
-                volume = StrengthFormulas.displayRounded(
-                    StrengthFormulas.totalVolume(sessionSets)
+            val exercise = exerciseRepository.getById(exerciseId)
+            if (exercise == null) {
+                _uiState.value = UiState(
+                    loading = false,
+                    error = "Exercise not found."
                 )
-            )
-        }.sortedBy { it.date }
+                return@launch
+            }
 
-        _uiState.value = UiState(
-            exercise = exercise,
-            points = points,
-            bestEstimated1RM = points.maxOfOrNull { it.estimated1RM } ?: 0,
-            allTimeVolume = points.sumOf { it.volume },
-            loading = false
-        )
+            combine(
+                workoutRepository.observeAllSessions(),
+                workoutRepository.observeAllSetsForExercise(exerciseId)
+            ) { allSessions, allSets ->
+                exercise to Pair(allSessions, allSets)
+            }.collect { (currentExercise, data) ->
+                val (allSessions, allSets) = data
+                val sessions = allSessions
+                    .filter { it.completed }
+                    .associateBy { it.id }
+
+                val sets = allSets
+                    .filter { sessions.containsKey(it.workoutSessionId) }
+                    .filter { !it.isWarmup }
+                    .groupBy { it.workoutSessionId }
+
+                val points = sets.mapNotNull { (sessionId, sessionSets) ->
+                    val session = sessions[sessionId] ?: return@mapNotNull null
+                    ExerciseTrendPoint(
+                        sessionId = sessionId,
+                        date = session.startedAt,
+                        estimated1RM = StrengthFormulas.displayRounded(
+                            StrengthFormulas.bestEstimated1RM(sessionSets)
+                        ),
+                        volume = StrengthFormulas.displayRounded(
+                            StrengthFormulas.totalVolume(sessionSets)
+                        )
+                    )
+                }.sortedBy { it.date }
+
+                _uiState.value = UiState(
+                    exercise = currentExercise,
+                    points = points,
+                    bestEstimated1RM = points.maxOfOrNull { it.estimated1RM } ?: 0,
+                    allTimeVolume = points.sumOf { it.volume },
+                    loading = false
+                )
+            }
+        }
     }
 }
