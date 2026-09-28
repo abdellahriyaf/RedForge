@@ -42,6 +42,8 @@ import com.redforge.app.R
 import com.redforge.app.ui.components.ForgeButton
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.theme.ForgeGold
+import com.redforge.app.ui.theme.ForgeHeroGradient
+import com.redforge.app.ui.theme.ForgeSurfaceGradient
 import com.redforge.app.ui.theme.ForgeGradientEnd
 import com.redforge.app.ui.theme.ForgeGradientStart
 import com.redforge.app.ui.theme.ForgeRed
@@ -176,7 +178,7 @@ private fun WorkoutHeroCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(MaterialTheme.colorScheme.surface)
+             .background(ForgeHeroGradient)
             .padding(24.dp)
     ) {
         Column {
