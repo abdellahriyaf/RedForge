@@ -147,8 +147,14 @@ class RestTimerService : Service() {
 
     private fun playFinishSound() {
         val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
-        tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 320)
-        android.os.Handler(mainLooper).postDelayed({ tone.release() }, 360L)
+        tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 140)
+        android.os.Handler(mainLooper).postDelayed({
+            tone.startTone(ToneGenerator.TONE_PROP_ACK, 180)
+        }, 155L)
+        android.os.Handler(mainLooper).postDelayed({
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP2, 240)
+        }, 355L)
+        android.os.Handler(mainLooper).postDelayed({ tone.release() }, 650L)
     }
 
     private fun updateNotification(secondsRemaining: Int, isPaused: Boolean) {
