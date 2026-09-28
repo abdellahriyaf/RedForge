@@ -26,7 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.redforge.app.R
 import com.redforge.app.ui.theme.ForgeGold
 import com.redforge.app.ui.theme.ForgeGradientEnd
-import com.redforge.app.ui.theme.ForgeGradientStart\nimport com.redforge.app.ui.theme.ForgeHeroGradient\nimport com.redforge.app.ui.theme.ForgeGlowGradient
+import com.redforge.app.ui.theme.ForgeGradientStart
+import com.redforge.app.ui.theme.ForgeGlowGradient
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 
@@ -60,39 +61,46 @@ fun SplashScreen(onFinished: () -> Unit) {
             .background(Brush.verticalGradient(listOf(ForgeGradientStart, ForgeGradientEnd))),
         contentAlignment = Alignment.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {\n            Box(\n                modifier = Modifier\n                    .size(260.dp)\n                    .background(ForgeGlowGradient)\n            )\n            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Filled.FitnessCenter,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+        Box(contentAlignment = Alignment.Center) {
+            Box(
                 modifier = Modifier
-                    .size(84.dp)
-                    .scale(scale.value)
+                    .size(260.dp)
+                    .background(ForgeGlowGradient)
             )
-            Spacer(Modifier.height(16.dp))
-            Text(
-                "REDFORGE",
-                style = MaterialTheme.typography.displayLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.scale(scale.value)
-            )
-            Text(
-                stringResource(R.string.tagline),
-                style = MaterialTheme.typography.labelLarge,
-                color = ForgeGold,
-                modifier = Modifier.padding(top = 4.dp)
-            )
-            Spacer(Modifier.height(48.dp))
-            Text(
-                "\u201C$quote\u201D",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .padding(horizontal = 40.dp)
-                    .alpha(alpha.value)
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Filled.FitnessCenter,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .size(84.dp)
+                        .scale(scale.value)
+                )
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    "REDFORGE",
+                    style = MaterialTheme.typography.displayLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.scale(scale.value)
+                )
+                Text(
+                    stringResource(R.string.tagline),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = ForgeGold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Spacer(Modifier.height(48.dp))
+                Text(
+                    "“$quote”",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .padding(horizontal = 40.dp)
+                        .alpha(alpha.value)
+                )
+            }
         }
     }
 }
