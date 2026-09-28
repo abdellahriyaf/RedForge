@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.CountDownTimer
 import android.os.IBinder
+import android.os.Looper
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -34,7 +35,7 @@ class RestTimerService : Service() {
 
     private var countDownTimer: CountDownTimer? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val mainHandler = android.os.Handler(mainLooper)
+    private val mainHandler = android.os.Handler(Looper.getMainLooper())
     private var finishTone: ToneGenerator? = null
 
     companion object {
