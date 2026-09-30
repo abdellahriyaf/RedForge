@@ -18,6 +18,7 @@ data class WorkoutSession(
     val startedAt: Long = System.currentTimeMillis(),
     val endedAt: Long? = null,
     val completed: Boolean = false,
+    val abandoned: Boolean = false, // Auto-closed at day rollover; logged sets remain in history.
     val notes: String = ""
 )
 
