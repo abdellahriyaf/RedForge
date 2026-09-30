@@ -90,7 +90,7 @@ private fun preSimulatedAnvil(t: Float): Pair<Float, Float> {
 }
 
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
+fun AnvilDropSplashScreen(onFinished: () -> Unit) {
     val flameOuter = remember { svgPath(flameOuterData) }
     val flameInner = remember { svgPath(flameInnerData) }
     val rightEye = remember { svgPath(rightEyeData) }
