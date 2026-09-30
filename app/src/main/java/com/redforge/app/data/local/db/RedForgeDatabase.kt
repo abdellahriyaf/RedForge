@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
         ProgressPhoto::class,
         BodyMeasurement::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
