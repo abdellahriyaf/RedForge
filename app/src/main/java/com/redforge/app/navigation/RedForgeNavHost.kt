@@ -1,19 +1,25 @@
 package com.redforge.app.navigation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.InsertChartOutlined
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ShowChart
 import androidx.compose.material3.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import com.redforge.app.ui.theme.ForgeBlack
+import com.redforge.app.ui.theme.ForgeCharcoal
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -48,11 +54,9 @@ import com.redforge.app.viewmodel.redForgeViewModel
 
 private val bottomNavRoutes = setOf(
     NavRoutes.HOME,
-    NavRoutes.HISTORY,
     NavRoutes.SPLIT_LIST,
     NavRoutes.PROGRESS_DASHBOARD,
-    NavRoutes.PHOTO_TRACKING,
-    NavRoutes.BODY_MEASUREMENTS,
+    NavRoutes.HISTORY,
     NavRoutes.SETTINGS
 )
 
@@ -63,6 +67,12 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
     val currentRoute = backStackEntry?.destination?.route
 
     Scaffold(
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                listOf(ForgeBlack, ForgeCharcoal, ForgeBlack)
+            )
+        ),
         bottomBar = {
             if (currentRoute in bottomNavRoutes) {
                 RedForgeBottomBar(navController)
@@ -157,10 +167,6 @@ fun RedForgeApp(openWorkoutOnLaunch: Boolean = false) {
                 ExerciseLibraryScreen(
                     pickerMode = pickerMode,
                     onPick = { exercise ->
-                        // The previous entry (day editor) owns adding it — simplest robust approach
-                        // without a shared ViewModel is to pop back and let the day editor's own
-                        // FAB flow re-trigger; here we directly add via the day editor's ViewModel
-                        // by popping back with a result.
                         navController.previousBackStackEntry?.savedStateHandle?.set("picked_exercise_id", exercise.id)
                         navController.popBackStack()
                     },
@@ -247,37 +253,39 @@ private fun RedForgeBottomBar(navController: NavHostController) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    NavigationBar {
+    NavigationBar(
+        modifier = Modifier.shadow(12.dp),
+        containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.98f),
+        tonalElevation = 10.dp
+    ) {
         NavigationBarItem(
             selected = currentRoute == NavRoutes.HOME,
             onClick = { navController.navigateBottom(NavRoutes.HOME) },
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Home") },
+            icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
             label = { Text("Home") }
-        )
-        NavigationBarItem(
-            selected = currentRoute == NavRoutes.HISTORY,
-            onClick = { navController.navigateBottom(NavRoutes.HISTORY) },
-            icon = { Icon(Icons.Filled.History, contentDescription = "History") },
-            label = { Text("History") }
         )
         NavigationBarItem(
             selected = currentRoute == NavRoutes.SPLIT_LIST,
             onClick = { navController.navigateBottom(NavRoutes.SPLIT_LIST) },
-            icon = { Icon(Icons.Filled.FitnessCenter, contentDescription = "Splits") },
+            icon = { Icon(Icons.Outlined.CalendarMonth, contentDescription = "Splits") },
             label = { Text("Splits") }
         )
         NavigationBarItem(
-            selected = currentRoute == NavRoutes.PROGRESS_DASHBOARD ||
-                currentRoute == NavRoutes.PHOTO_TRACKING ||
-                currentRoute == NavRoutes.BODY_MEASUREMENTS,
+            selected = currentRoute == NavRoutes.PROGRESS_DASHBOARD,
             onClick = { navController.navigateBottom(NavRoutes.PROGRESS_DASHBOARD) },
-            icon = { Icon(Icons.Filled.InsertChartOutlined, contentDescription = "Progress") },
+            icon = { Icon(Icons.Outlined.ShowChart, contentDescription = "Progress") },
             label = { Text("Progress") }
+        )
+        NavigationBarItem(
+            selected = currentRoute == NavRoutes.HISTORY,
+            onClick = { navController.navigateBottom(NavRoutes.HISTORY) },
+            icon = { Icon(Icons.Outlined.History, contentDescription = "History") },
+            label = { Text("History") }
         )
         NavigationBarItem(
             selected = currentRoute == NavRoutes.SETTINGS,
             onClick = { navController.navigateBottom(NavRoutes.SETTINGS) },
-            icon = { Icon(Icons.Filled.Settings, contentDescription = "Settings") },
+            icon = { Icon(Icons.Outlined.Settings, contentDescription = "Settings") },
             label = { Text("Settings") }
         )
     }

@@ -84,7 +84,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             )
             Spacer(Modifier.height(48.dp))
             Text(
-                "\u201C$quote\u201D",
+                "“$quote”",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

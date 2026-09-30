@@ -4,13 +4,17 @@ package com.redforge.app.ui.screens.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.LibraryMusic
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,6 +44,8 @@ fun SettingsScreen() {
     var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var importError by remember { mutableStateOf(false) }
     var importMessage by remember { mutableStateOf<String?>(null) }
+    var timerExpanded by remember { mutableStateOf(false) }
+    var backupExpanded by remember { mutableStateOf(false) }
 
     val importPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -90,32 +96,55 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Default rest time", style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.height(8.dp))
-            Slider(
-                value = state.defaultRestSeconds.toFloat(),
-                onValueChange = { vm.setDefaultRest(it.toInt()) },
-                valueRange = 15f..300f,
-                steps = 18
-            )
-            Text("${state.defaultRestSeconds} seconds", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text(
-                "Used when an exercise has no custom rest prescription.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            SwitchRow("Timer sound", state.timerSoundEnabled) { vm.setTimerSound(it) }
-            SwitchRow("Timer vibration", state.timerVibrationEnabled) { vm.setTimerVibration(it) }
-            SwitchRow("Dark theme", state.darkThemeForced) { vm.setDarkForced(it) }
-            Text(
-                if (state.darkThemeForced) "RedForge always uses its dark theme." else "RedForge follows your system light/dark theme.",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { timerExpanded = !timerExpanded }
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Timer", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Rest duration, sound, and vibration",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = { timerExpanded = !timerExpanded }) {
+                    Icon(
+                        if (timerExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                        contentDescription = if (timerExpanded) "Collapse timer settings" else "Expand timer settings"
+                    )
+                }
+            }
+            AnimatedVisibility(visible = timerExpanded) {
+                Column {
+                    Spacer(Modifier.height(8.dp))
+                    Text("Default rest time", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Slider(
+                        value = state.defaultRestSeconds.toFloat(),
+                        onValueChange = { vm.setDefaultRest(it.toInt()) },
+                        valueRange = 15f..300f,
+                        steps = 18
+                    )
+                    Text("${state.defaultRestSeconds} seconds", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "Used when an exercise has no custom rest prescription.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    SwitchRow("Timer sound", state.timerSoundEnabled) { vm.setTimerSound(it) }
+                    SwitchRow("Timer vibration", state.timerVibrationEnabled) { vm.setTimerVibration(it) }
+                    Text(
+                        "Timer completion uses a short notification tone and a tactile vibration pattern.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
 
         Spacer(Modifier.height(12.dp))
@@ -140,77 +169,76 @@ fun SettingsScreen() {
 
         Spacer(Modifier.height(12.dp))
         ForgeCard(modifier = Modifier.fillMaxWidth()) {
-            Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "RedForge has no automatic cloud sync. Export a backup file whenever you want a safety copy, or before switching phones — you choose where it's saved.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { backupExpanded = !backupExpanded }
+                    .padding(vertical = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Backup & restore", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        "Export or restore your local RedForge data",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                IconButton(onClick = { backupExpanded = !backupExpanded }) {
+                    Icon(
+                        if (backupExpanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                        contentDescription = if (backupExpanded) "Collapse backup and restore" else "Expand backup and restore"
+                    )
+                }
+            }
+            AnimatedVisibility(visible = backupExpanded) {
                 Column {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "RedForge has no automatic cloud sync. Export a backup whenever you want a safety copy, or before switching phones.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
                     OutlinedButton(
                         onClick = {
                             isExporting = true
                             scope.launch {
-                                val uri = withContext(Dispatchers.IO) {
-                                    DataBackupUtil.exportBackup(context)
-                                }
+                                val uri = withContext(Dispatchers.IO) { DataBackupUtil.exportBackup(context) }
                                 isExporting = false
-                                if (uri != null) {
-                                    DataBackupUtil.shareBackup(context, uri)
-                                }
+                                if (uri != null) DataBackupUtil.shareBackup(context, uri)
                             }
                         },
                         enabled = !isExporting,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            Icons.Filled.CloudUpload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Filled.CloudUpload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(if (isExporting) "Exporting…" else "Export backup")
                     }
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         "Create a local .zip backup",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
-                }
-
-                Column {
+                    Spacer(Modifier.height(12.dp))
                     OutlinedButton(
                         onClick = {
-                            importPicker.launch(
-                                arrayOf(
-                                    "application/zip",
-                                    "application/octet-stream",
-                                    "*/*"
-                                )
-                            )
+                            importPicker.launch(arrayOf("application/zip", "application/octet-stream", "*/*"))
                         },
                         enabled = !isImporting,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            Icons.Filled.CloudDownload,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
+                        Icon(Icons.Filled.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(if (isImporting) "Checking…" else "Restore backup")
                     }
-                    Spacer(Modifier.height(4.dp))
                     Text(
                         "Replace current data from a RedForge .zip",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
             }

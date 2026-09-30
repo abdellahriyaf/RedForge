@@ -30,23 +30,25 @@ class HistoryViewModel(
 ) : ViewModel() {
 
     val sessions: StateFlow<List<HistorySessionUi>> =
-        workoutRepository.observeAllSessions()
-            .map { sessions ->
-                sessions
-                    .filter { it.completed }
-                    .map { session ->
-                        val sets = workoutRepository.getSetsOnce(session.id)
-                        HistorySessionUi(
-                            session = session,
-                            setCount = sets.size,
-                            workingSetCount = sets.count { !it.isWarmup },
-                            volume = StrengthFormulas.displayRounded(
-                                StrengthFormulas.totalVolume(sets)
-                            )
+        combine(
+            workoutRepository.observeAllSessions(),
+            workoutRepository.observeAllSets()
+        ) { sessions, allSets ->
+            sessions
+                .filter { it.completed }
+                .map { session ->
+                    val sets = allSets.filter { it.workoutSessionId == session.id }
+                    HistorySessionUi(
+                        session = session,
+                        setCount = sets.size,
+                        workingSetCount = sets.count { !it.isWarmup },
+                        volume = StrengthFormulas.displayRounded(
+                            StrengthFormulas.totalVolume(sets)
                         )
-                    }
-            }
-            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+                    )
+                }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 }
 
 class HistoryDetailViewModel(

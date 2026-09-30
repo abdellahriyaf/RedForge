@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">RedForge v0.5</string>
+    <string name="app_name">RedForge v0.6</string>
     <string name="tagline">Forge your progress.</string>
 
     <string-array name="motivational_quotes">

@@ -36,6 +36,10 @@ class SplitRepository(private val dao: SplitDao) {
         }
     }
 
+    suspend fun clearActiveSplit() {
+        activationMutex.withLock { dao.clearActiveFlag() }
+    }
+
     fun observeDays(splitId: Long): Flow<List<SplitDay>> = dao.observeDaysForSplit(splitId)
     suspend fun getDay(id: Long) = dao.getDay(id)
     suspend fun saveDay(day: SplitDay): Long = dao.upsertDay(day)

@@ -12,8 +12,8 @@ android {
         applicationId = "com.redforge.app.v06"
         minSdk = 24
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 69
+        versionName = "0.6.9"
 
         vectorDrawables.useSupportLibrary = true
     }
@@ -56,6 +56,7 @@ android {
 dependencies {
     // Core / Compose
     implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")

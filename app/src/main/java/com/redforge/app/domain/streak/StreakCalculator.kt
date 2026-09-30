@@ -11,8 +11,14 @@ data class StreakResult(
 )
 
 /**
- * Computes a day-based training streak from completed sessions.
- * Multiple sessions on one calendar day count only once.
+ * Computes a training streak from completed sessions.
+ *
+ * When schedule information is supplied, only scheduled training days count toward the streak;
+ * scheduled rest days do not break it. A missed scheduled training day breaks the streak, while
+ * the current day remains open until it is completed or explicitly skipped.
+ *
+ * The max-gap behavior remains available as a fallback for callers that do not have a split
+ * schedule.
  */
 object StreakCalculator {
 
@@ -20,7 +26,11 @@ object StreakCalculator {
         sessions: List<WorkoutSession>,
         maxGapDays: Int = 2,
         nowMillis: Long = System.currentTimeMillis(),
-        timeZone: TimeZone = TimeZone.getDefault()
+        timeZone: TimeZone = TimeZone.getDefault(),
+        scheduledTrainingDayOrders: Set<Int> = emptySet(),
+        cycleLength: Int = 0,
+        scheduleAnchorStartMillis: Long? = null,
+        skippedDayStartMillis: Long? = null
     ): StreakResult {
         val completed = sessions.filter { it.completed }.sortedBy { it.startedAt }
         if (completed.isEmpty()) return StreakResult(0, 0, 0L)
@@ -29,6 +39,22 @@ object StreakCalculator {
             .map { CalendarDay.from(it.startedAt, timeZone) }
             .distinct()
             .sorted()
+
+        if (scheduledTrainingDayOrders.isNotEmpty() &&
+            cycleLength > 0 &&
+            scheduleAnchorStartMillis != null
+        ) {
+            return computeScheduled(
+                uniqueCompletedDays = uniqueDays.toSet(),
+                lastCompletedMillis = completed.last().startedAt,
+                nowMillis = nowMillis,
+                timeZone = timeZone,
+                scheduledTrainingDayOrders = scheduledTrainingDayOrders,
+                cycleLength = cycleLength,
+                scheduleAnchorStartMillis = scheduleAnchorStartMillis,
+                skippedDayStartMillis = skippedDayStartMillis
+            )
+        }
 
         var current = 1
         var longest = 1
@@ -42,15 +68,119 @@ object StreakCalculator {
         val daysSinceLast = today.differenceFrom(uniqueDays.last(), timeZone)
         val liveCurrent = if (daysSinceLast > maxGapDays) 0 else current
 
-        val lastDayMillis = completed.last().startedAt
         return StreakResult(
             current = liveCurrent,
             longest = longest,
-            lastCompletedDayMillis = lastDayMillis
+            lastCompletedDayMillis = completed.last().startedAt
         )
     }
 
-    private data class CalendarDay(val era: Int, val year: Int, val dayOfYear: Int) : Comparable<CalendarDay> {
+    private fun computeScheduled(
+        uniqueCompletedDays: Set<CalendarDay>,
+        lastCompletedMillis: Long,
+        nowMillis: Long,
+        timeZone: TimeZone,
+        scheduledTrainingDayOrders: Set<Int>,
+        cycleLength: Int,
+        scheduleAnchorStartMillis: Long,
+        skippedDayStartMillis: Long?
+    ): StreakResult {
+        val anchor = CalendarDay.from(scheduleAnchorStartMillis, timeZone)
+        val today = CalendarDay.from(nowMillis, timeZone)
+        val firstDay = minOf(anchor, uniqueCompletedDays.minOrNull() ?: anchor)
+        val endDay = maxOf(today, uniqueCompletedDays.maxOrNull() ?: today)
+
+        var day = firstDay
+        var running = 0
+        var longest = 0
+        var current = 0
+        var sawCurrentTrainingDay = false
+        var brokenSinceLastCompleted = false
+
+        while (day <= endDay) {
+            val scheduled = isScheduledTrainingDay(
+                day = day,
+                anchor = anchor,
+                cycleLength = cycleLength,
+                scheduledTrainingDayOrders = scheduledTrainingDayOrders,
+                timeZone = timeZone
+            )
+
+            if (scheduled) {
+                val completedToday = day in uniqueCompletedDays
+                val skippedToday = skippedDayStartMillis != null &&
+                    day == CalendarDay.from(skippedDayStartMillis, timeZone)
+
+                when {
+                    completedToday -> {
+                        running += 1
+                        longest = maxOf(longest, running)
+                        if (day <= today) {
+                            current = running
+                            sawCurrentTrainingDay = true
+                            brokenSinceLastCompleted = false
+                        }
+                    }
+                    day < today || skippedToday -> {
+                        running = 0
+                        if (day <= today) {
+                            brokenSinceLastCompleted = true
+                            if (day < today || skippedToday) current = 0
+                        }
+                    }
+                    else -> {
+                        // Today is still open; don't break an otherwise live streak.
+                    }
+                }
+            }
+
+            day = day.plusDays(timeZone)
+        }
+
+        val lastCompletedDay = CalendarDay.from(lastCompletedMillis, timeZone)
+        val todayScheduled = isScheduledTrainingDay(
+            day = today,
+            anchor = anchor,
+            cycleLength = cycleLength,
+            scheduledTrainingDayOrders = scheduledTrainingDayOrders,
+            timeZone = timeZone
+        )
+
+        val liveCurrent = when {
+            skippedDayStartMillis != null &&
+                today == CalendarDay.from(skippedDayStartMillis, timeZone) -> 0
+            todayScheduled && !uniqueCompletedDays.contains(today) -> {
+                if (brokenSinceLastCompleted) 0 else current
+            }
+            lastCompletedDay == today -> current
+            else -> current
+        }
+
+        return StreakResult(
+            current = liveCurrent.coerceAtLeast(0),
+            longest = longest,
+            lastCompletedDayMillis = lastCompletedMillis
+        )
+    }
+
+    private fun isScheduledTrainingDay(
+        day: CalendarDay,
+        anchor: CalendarDay,
+        cycleLength: Int,
+        scheduledTrainingDayOrders: Set<Int>,
+        timeZone: TimeZone
+    ): Boolean {
+        val elapsed = day.differenceFrom(anchor, timeZone)
+        if (elapsed < 0) return false
+        val zeroBasedOrder = (elapsed % cycleLength).toInt()
+        return (zeroBasedOrder + 1) in scheduledTrainingDayOrders
+    }
+
+    private data class CalendarDay(
+        val era: Int,
+        val year: Int,
+        val dayOfYear: Int
+    ) : Comparable<CalendarDay> {
         companion object {
             fun from(millis: Long, timeZone: TimeZone): CalendarDay {
                 val calendar = Calendar.getInstance(timeZone).apply { timeInMillis = millis }
@@ -62,32 +192,42 @@ object StreakCalculator {
             }
         }
 
-        override fun compareTo(other: CalendarDay): Int {
+        override fun compareTo(other: CalendarDay): Int =
             compareValuesBy(this, other, { it.era }, { it.year }, { it.dayOfYear })
-                .let { return it }
-        }
 
         fun differenceFrom(other: CalendarDay, timeZone: TimeZone): Int {
-            val start = toCalendar(timeZone)
-            start.set(Calendar.ERA, era)
-            start.set(Calendar.YEAR, year)
-            start.set(Calendar.DAY_OF_YEAR, dayOfYear)
-            val end = toCalendar(timeZone)
-            end.set(Calendar.ERA, other.era)
-            end.set(Calendar.YEAR, other.year)
-            end.set(Calendar.DAY_OF_YEAR, other.dayOfYear)
+            val start = toCalendar(timeZone).also {
+                it.set(Calendar.ERA, era)
+                it.set(Calendar.YEAR, year)
+                it.set(Calendar.DAY_OF_YEAR, dayOfYear)
+            }
+            val end = toCalendar(timeZone).also {
+                it.set(Calendar.ERA, other.era)
+                it.set(Calendar.YEAR, other.year)
+                it.set(Calendar.DAY_OF_YEAR, other.dayOfYear)
+            }
+
             var cursor = end.clone() as Calendar
             var difference = 0
-            if (!sameCalendarDate(cursor, start)) {
+            while (!sameCalendarDate(cursor, start)) {
                 val forward = cursor.before(start)
-                while (!sameCalendarDate(cursor, start)) {
-                    cursor.add(Calendar.DAY_OF_YEAR, if (forward) 1 else -1)
-                    difference += if (forward) 1 else -1
-                    if (kotlin.math.abs(difference) > 100_000) break
-                }
+                cursor.add(Calendar.DAY_OF_YEAR, if (forward) 1 else -1)
+                difference += if (forward) 1 else -1
+                if (kotlin.math.abs(difference) > 100_000) break
             }
             return difference
         }
+
+        fun plusDays(timeZone: TimeZone): CalendarDay {
+            val calendar = toCalendar(timeZone).also {
+                it.set(Calendar.ERA, era)
+                it.set(Calendar.YEAR, year)
+                it.set(Calendar.DAY_OF_YEAR, dayOfYear)
+            }
+            calendar.add(Calendar.DAY_OF_YEAR, 1)
+            return from(calendar.timeInMillis, timeZone)
+        }
+
         private fun toCalendar(timeZone: TimeZone): Calendar =
             Calendar.getInstance(timeZone).apply {
                 clear()

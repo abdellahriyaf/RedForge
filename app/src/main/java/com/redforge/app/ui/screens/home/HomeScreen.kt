@@ -15,11 +15,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -39,6 +42,7 @@ import com.redforge.app.R
 import com.redforge.app.ui.components.ForgeButton
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.theme.ForgeGold
+import com.redforge.app.ui.theme.ForgeHeroGradient
 import com.redforge.app.ui.theme.ForgeGradientEnd
 import com.redforge.app.ui.theme.ForgeGradientStart
 import com.redforge.app.ui.theme.ForgeRed
@@ -64,6 +68,7 @@ fun HomeScreen(
     }
     val state by vm.uiState.collectAsState()
     val milestone by vm.milestoneEvent.collectAsState()
+    var showResetDialog by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -100,10 +105,13 @@ fun HomeScreen(
                 todayCompleted = state.todayCompleted,
                 isRestDay = nextDay?.isRestDay == true && state.inProgressSession == null,
                 scheduleNotStarted = state.scheduleNotStarted,
+                todaySkipped = state.todaySkipped,
                 sessionOrDayName = state.inProgressSession?.splitDayNameSnapshot
-                    ?: if (state.scheduleNotStarted) "Starts tomorrow" else nextDay?.name,
+                    ?: if (state.scheduleNotStarted) "Starts later" else nextDay?.name,
                 onStartOrResume = if (state.inProgressSession != null) onResumeWorkout else onStartWorkout,
-                canStart = (nextDay != null && !nextDay.isRestDay && !state.todayCompleted) || state.inProgressSession != null
+                onResetWorkout = { showResetDialog = true },
+                onSkipToday = { vm.skipTodayWorkout() },
+                canStart = (nextDay != null && !nextDay.isRestDay && !state.todayCompleted && !state.todaySkipped) || state.inProgressSession != null
             )
 
             Spacer(Modifier.height(16.dp))
@@ -128,32 +136,26 @@ fun HomeScreen(
                 onClick = onOpenHistory
             )
 
-            Spacer(Modifier.height(16.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                QuickActionCard(
-                    icon = Icons.Filled.CalendarViewWeek,
-                    label = "Splits",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenSplits
-                )
-                QuickActionCard(
-                    icon = Icons.Filled.InsertChartOutlined,
-                    label = "Progress",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenProgress
-                )
-                QuickActionCard(
-                    icon = Icons.Filled.History,
-                    label = "History",
-                    modifier = Modifier.weight(1f),
-                    onClick = onOpenHistory
-                )
-            }
+            Spacer(Modifier.height(4.dp))
         }
 
         milestone?.let { days ->
             MilestoneCelebrationOverlay(days = days, onDismiss = { vm.consumeMilestoneEvent() })
+        }
+
+        if (showResetDialog) {
+            AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = { Text("Reset workout?") },
+                text = { Text("This removes the unfinished workout and its logged sets. It will not affect completed workout history.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showResetDialog = false
+                        vm.resetInProgressWorkout()
+                    }) { Text("Reset", color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = { TextButton(onClick = { showResetDialog = false }) { Text("Keep workout") } }
+            )
         }
     }
 }
@@ -164,15 +166,18 @@ private fun WorkoutHeroCard(
     todayCompleted: Boolean,
     isRestDay: Boolean,
     scheduleNotStarted: Boolean,
+    todaySkipped: Boolean,
     sessionOrDayName: String?,
     onStartOrResume: () -> Unit,
+    onResetWorkout: () -> Unit,
+    onSkipToday: () -> Unit,
     canStart: Boolean
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .background(Brush.linearGradient(listOf(ForgeRedDark, ForgeRed)))
+             .background(ForgeHeroGradient)
             .padding(24.dp)
     ) {
         Column {
@@ -180,47 +185,68 @@ private fun WorkoutHeroCard(
                 when {
                     inProgress -> "IN PROGRESS"
                     todayCompleted -> "TODAY COMPLETE"
+                    todaySkipped -> "TODAY SKIPPED"
                     isRestDay -> "REST DAY"
                     else -> "TODAY'S SESSION"
                 },
                 style = MaterialTheme.typography.labelLarge,
-                color = Color.White.copy(alpha = 0.85f)
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(6.dp))
             Text(
                 sessionOrDayName ?: "Build a split to get started",
                 style = MaterialTheme.typography.displayLarge.copy(fontSize = 30.sp),
-                color = Color.White,
-                fontWeight = FontWeight.Black
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold
             )
             Spacer(Modifier.height(8.dp))
             Text(
                 when {
                     inProgress -> "Your active workout is safely saved."
                     todayCompleted -> "You logged a session today. Nice work."
+                    todaySkipped -> "Today's scheduled session was skipped. The plan continues tomorrow."
                     isRestDay -> "Recovery is part of the plan."
-                    scheduleNotStarted -> "Your new split begins tomorrow."
+                    scheduleNotStarted -> "Your plan is waiting for its start date."
                     else -> "Show up. Log it. Beat it next time."
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.White.copy(alpha = 0.82f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(18.dp))
-            Button(
-                onClick = onStartOrResume,
-                enabled = canStart,
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ForgeRed),
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            ) {
-                Text(
-                    when {
-                        inProgress -> "Resume workout"
-                        todayCompleted -> "Completed"
-                        isRestDay -> "Recovery day"
-                        else -> "Start workout"
-                    },
-                    fontWeight = FontWeight.Bold
-                )
+            if (inProgress) {
+                Button(
+                    onClick = onStartOrResume,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) { Text("Resume workout", fontWeight = FontWeight.Bold) }
+                TextButton(
+                    onClick = onResetWorkout,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) { Text("Reset workout", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            } else {
+                Button(
+                    onClick = onStartOrResume,
+                    enabled = canStart,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ForgeRed),
+                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                ) {
+                    Text(
+                        when {
+                            todayCompleted -> "Completed"
+                            todaySkipped -> "Skipped"
+                            isRestDay -> "Recovery day"
+                            scheduleNotStarted -> "Not started yet"
+                            else -> "Start workout"
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                if (!todayCompleted && !todaySkipped && !isRestDay && !scheduleNotStarted) {
+                    TextButton(
+                        onClick = onSkipToday,
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    ) { Text("Skip today's workout", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
             }
         }
     }
@@ -230,11 +256,21 @@ private fun WorkoutHeroCard(
 private fun StreakChip(currentStreak: Int, longestStreak: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     ForgeCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Icon(painterResource(R.drawable.ic_flame_streak), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(28.dp))
-            Spacer(Modifier.width(10.dp))
+            Icon(
+                painterResource(R.drawable.ic_flame_streak),
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(34.dp)
+            )
+            Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("$currentStreak-day streak", style = MaterialTheme.typography.titleMedium)
-                Text("Best: $longestStreak", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    "$currentStreak",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text("DAY STREAK  ·  BEST $longestStreak", style = MaterialTheme.typography.labelSmall)
             }
             TextButton(onClick = onClick) { Text("Share") }
         }
@@ -279,7 +315,7 @@ private fun MilestoneCelebrationOverlay(days: Int, onDismiss: () -> Unit) {
                 modifier = Modifier
                     .padding(32.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Brush.linearGradient(listOf(ForgeGradientStart, ForgeGradientEnd)))
+                    .background(MaterialTheme.colorScheme.surface)
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {

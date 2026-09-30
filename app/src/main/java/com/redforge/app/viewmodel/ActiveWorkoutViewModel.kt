@@ -73,6 +73,7 @@ class ActiveWorkoutViewModel(
     }
 
     private suspend fun resumeOrStart() {
+        val settings = settingsDataStore.settingsFlow.first()
         val activeSplit = splitRepository.observeActiveSplit().first()
         val isDeload = activeSplit?.isDeloadCycle ?: false
         _uiState.value = _uiState.value.copy(isDeloadCycle = isDeload)
@@ -97,7 +98,42 @@ class ActiveWorkoutViewModel(
             }
 
             val allSessions = workoutRepository.observeAllSessions().first()
-            val plannedDay = SplitScheduler.nextDay(days, allSessions)
+            val todayStart = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }.timeInMillis
+            val completedToday = allSessions.any { session ->
+                session.completed &&
+                    session.splitDayId != null &&
+                    days.any { it.id == session.splitDayId } &&
+                    session.startedAt >= todayStart
+            }
+            if (completedToday) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = "Today's workout is already complete. Your next scheduled session will be available tomorrow."
+                )
+                return
+            }
+            val skippedToday = settings.skippedSplitId == activeSplit.id &&
+                settings.skippedWorkoutDayStartMillis == todayStart
+            if (skippedToday) {
+                _uiState.value = _uiState.value.copy(
+                    loading = false,
+                    error = "Today's workout was skipped. The next scheduled session will be available tomorrow."
+                )
+                return
+            }
+            val scheduleAnchor = settings.scheduleAnchorStartMillis.takeIf {
+                it != null && settings.scheduleAnchorSplitId == activeSplit.id
+            }
+            val plannedDay = SplitScheduler.nextDay(
+                days,
+                allSessions,
+                scheduleAnchorStartMillis = scheduleAnchor
+            )
             if (plannedDay == null || plannedDay.isRestDay) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,

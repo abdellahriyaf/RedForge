@@ -48,6 +48,7 @@ import com.redforge.app.ui.components.EmberEmptyState
 import com.redforge.app.ui.components.ForgeButton
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.theme.ForgeGold
+import com.redforge.app.ui.theme.ForgeHeroGradient
 import com.redforge.app.ui.theme.ForgeGreen
 import com.redforge.app.util.RestTimerController
 import com.redforge.app.viewmodel.ActiveWorkoutViewModel
@@ -127,7 +128,7 @@ fun ActiveWorkoutScreen(onFinished: () -> Unit, onBack: () -> Unit) {
                     DeloadBanner()
                 }
                 if (timerState.isRunning || timerState.isPaused) {
-                    RestTimerBar(timerState.secondsRemaining, timerState.isPaused, timerController)
+                    RestTimerBar(timerState.totalSeconds, timerState.secondsRemaining, timerState.isPaused, timerController)
                 }
 
                 when {
@@ -173,10 +174,20 @@ private fun ExercisePager(
 ) {
     val pagerState = rememberPagerState(pageCount = { blocks.size })
     val haptics = LocalHapticFeedback.current
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(blocks.size) {
+        if (blocks.isNotEmpty() && pagerState.currentPage >= blocks.size) {
+            pagerState.scrollToPage(blocks.lastIndex)
+        }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Sticky progress header — always shows which exercise you're on.
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 10.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 10.dp)
+        ) {
             Text(
                 "Exercise ${pagerState.currentPage + 1} of ${blocks.size}",
                 style = MaterialTheme.typography.labelLarge,
@@ -200,39 +211,56 @@ private fun ExercisePager(
         }
 
         HorizontalPager(state = pagerState, modifier = Modifier.weight(1f)) { page ->
-            val block = blocks[page]
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp)
-            ) {
-                ExerciseBlockCard(
-                    block = block,
-                    weightUnit = weightUnit,
-                    estimated1RM = vm.estimatedOneRepMax(block.loggedSets),
-                    onLogSet = { weight, reps, warmup, rpe ->
-                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        vm.logSet(block.exercise.id, weight, reps, warmup, rpe)
-                    },
-                    onDeleteSet = { vm.deleteSet(it) }
-                )
-                Spacer(Modifier.height(20.dp))
+            val block = blocks.getOrNull(page)
+            if (block == null) {
+                Box(Modifier.fillMaxSize())
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                ) {
+                    ExerciseBlockCard(
+                        block = block,
+                        weightUnit = weightUnit,
+                        estimated1RM = vm.estimatedOneRepMax(block.loggedSets),
+                        onLogSet = { weight, reps, warmup, rpe ->
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            vm.logSet(block.exercise.id, weight, reps, warmup, rpe)
+                        },
+                        onDeleteSet = { vm.deleteSet(it) }
+                    )
+                    Spacer(Modifier.height(20.dp))
+                }
             }
         }
 
-        // Prev/Next as an accessible alternative to swiping.
-        val scope = rememberCoroutineScope()
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             TextButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0)) } },
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            (pagerState.currentPage - 1).coerceAtLeast(0)
+                        )
+                    }
+                },
                 enabled = pagerState.currentPage > 0
             ) { Text("← Previous") }
+
             TextButton(
-                onClick = { scope.launch { pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(blocks.lastIndex)) } },
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(
+                            (pagerState.currentPage + 1).coerceAtMost(blocks.lastIndex)
+                        )
+                    }
+                },
                 enabled = pagerState.currentPage < blocks.lastIndex
             ) { Text("Next →") }
         }
@@ -298,7 +326,7 @@ private fun PrCelebrationOverlay(celebration: PrCelebration, onDismiss: () -> Un
 }
 
 @Composable
-private fun RestTimerBar(secondsRemaining: Int, isPaused: Boolean, controller: RestTimerController) {
+private fun RestTimerBar(totalSeconds: Int, secondsRemaining: Int, isPaused: Boolean, controller: RestTimerController) {
     val minutes = secondsRemaining / 60
     val seconds = secondsRemaining % 60
     val urgent = secondsRemaining in 1..5 && !isPaused
@@ -311,19 +339,34 @@ private fun RestTimerBar(secondsRemaining: Int, isPaused: Boolean, controller: R
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+             .background(ForgeHeroGradient)
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(Icons.Filled.Timer, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
         Spacer(Modifier.width(8.dp))
-        Text(
-            String.format(Locale.US, "%d:%02d", minutes, seconds),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onPrimary,
-            modifier = Modifier.graphicsLayer(scaleX = pulse, scaleY = pulse)
-        )
-        Spacer(Modifier.weight(1f))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    String.format(Locale.US, "%d:%02d", minutes, seconds),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.graphicsLayer(scaleX = pulse, scaleY = pulse)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (isPaused) "Paused" else "Rest",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.78f)
+                )
+            }
+            LinearProgressIndicator(
+                progress = { if (totalSeconds > 0) secondsRemaining.toFloat() / totalSeconds else 0f },
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                color = MaterialTheme.colorScheme.onPrimary,
+                trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.22f)
+            )
+        }
         TextButton(onClick = { if (isPaused) controller.resume() else controller.pause() }) {
             Text(if (isPaused) "Resume" else "Pause", color = MaterialTheme.colorScheme.onPrimary)
         }

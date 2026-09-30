@@ -7,6 +7,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -38,8 +39,19 @@ class RedForgeWidget : GlanceAppWidget() {
         val app = context.applicationContext as RedForgeApplication
         val activeSplit = app.splitRepository.observeActiveSplit().first()
         val sessions = app.workoutRepository.observeAllSessions().first()
+        val inProgress = app.workoutRepository.observeInProgressSession().first()
         val settings = app.settingsDataStore.settingsFlow.first()
-        val streak = StreakCalculator.compute(sessions).current
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val todaySkipped = activeSplit != null &&
+            settings.skippedSplitId == activeSplit.id &&
+            settings.skippedWorkoutDayStartMillis == todayStart
+        val rawStreak = StreakCalculator.compute(sessions).current
+        val streak = if (todaySkipped) 0 else rawStreak
 
         val days = activeSplit?.let {
             app.splitRepository.observeDays(it.id).first()
@@ -66,10 +78,12 @@ class RedForgeWidget : GlanceAppWidget() {
         }
 
         val title = when {
+            inProgress != null -> "Workout in progress"
             todayCompleted -> "Training complete"
+            todaySkipped -> "Workout skipped today"
             nextDay?.isRestDay == true -> "Rest day"
+            anchor?.let { SplitScheduler.isBeforeAnchor(it, System.currentTimeMillis()) } == true -> "Starts later"
             nextDay != null -> nextDay.name
-            anchor?.let { SplitScheduler.isBeforeAnchor(it, System.currentTimeMillis()) } == true -> "Starts tomorrow"
             else -> "Build a split"
         }
 
@@ -119,7 +133,34 @@ class RedForgeWidget : GlanceAppWidget() {
 
                 Spacer(modifier = GlanceModifier.height(10.dp))
 
-                if (!todayCompleted && nextDay != null && !nextDay.isRestDay) {
+                if (inProgress != null) {
+                    Row(modifier = GlanceModifier.fillMaxWidth()) {
+                        Text(
+                            "RESUME",
+                            modifier = GlanceModifier
+                                .padding(vertical = 8.dp, horizontal = 10.dp)
+                                .background(Color(0xFFE4141B))
+                                .clickable(actionStartActivity(startIntent)),
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Text(
+                            "OPEN",
+                            modifier = GlanceModifier
+                                .padding(vertical = 8.dp, horizontal = 10.dp)
+                                .clickable(actionStartActivity(openIntent)),
+                            style = TextStyle(
+                                color = ColorProvider(Color(0xFFB7B7C0)),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
+                } else if (!todayCompleted && !todaySkipped && nextDay != null && !nextDay.isRestDay) {
                     Row(modifier = GlanceModifier.fillMaxWidth()) {
                         Text(
                             "START",
@@ -129,6 +170,18 @@ class RedForgeWidget : GlanceAppWidget() {
                                 .clickable(actionStartActivity(startIntent)),
                             style = TextStyle(
                                 color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                        Spacer(modifier = GlanceModifier.width(8.dp))
+                        Text(
+                            "SKIP",
+                            modifier = GlanceModifier
+                                .padding(vertical = 8.dp, horizontal = 10.dp)
+                                .clickable(actionRunCallback<SkipWorkoutAction>()),
+                            style = TextStyle(
+                                color = ColorProvider(Color(0xFFB7B7C0)),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
                             )
