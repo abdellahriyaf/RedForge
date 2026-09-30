@@ -108,6 +108,8 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 
     init {
+        // Preserve yesterday's logged sets as partial history rather than leaving Resume/Reset active.
+        viewModelScope.launch { workoutRepository.archiveExpiredSessions() }
         viewModelScope.launch {
             uiState.filter { !it.loading }.collect { state ->
                 val milestone = STREAK_MILESTONES.lastOrNull {
