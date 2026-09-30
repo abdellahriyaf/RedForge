@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.provides
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -41,15 +40,9 @@ fun ExerciseProgressDetailScreen(
     val state by vm.uiState.collectAsState()
     var mode by remember { mutableStateOf(TrendMode.E1RM) }
 
-    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-        Scaffold(
-            topBar = {
+    Scaffold(
+        topBar = {
             TopAppBar(
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
-                ),
                 title = { Text(state.exercise?.name ?: "Progress") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -125,8 +118,8 @@ fun ExerciseProgressDetailScreen(
                 }
             }
         }
-        }
     }
+}
 
 @Composable
 private fun MetricCard(label: String, value: String, modifier: Modifier) {
@@ -198,4 +191,4 @@ private fun TrendRow(point: ExerciseTrendPoint, mode: TrendMode) {
             style = MaterialTheme.typography.bodyLarge
         )
     }
-}}
+}
