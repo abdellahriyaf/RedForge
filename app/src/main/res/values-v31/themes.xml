@@ -5,7 +5,7 @@
         <item name="android:navigationBarColor">@color/forge_black</item>
         <item name="android:windowBackground">@color/forge_black</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowSplashScreenBackground">@color/forge_black</item>
+        <item name="android:windowSplashScreenBackground">@color/forge_intro_black</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
     </style>
 </resources>
