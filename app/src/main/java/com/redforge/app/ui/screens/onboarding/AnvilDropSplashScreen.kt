@@ -1,6 +1,5 @@
 package com.redforge.app.ui.screens.onboarding
 
-import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -248,7 +247,6 @@ private fun DrawScope.drawAnvilDrop(
         withTransform({
             translate(512f, 620f + flameY)
             scale(flameScale * (1f - flameWobble * 0.6f), flameScale * (1f + flameWobble))
-            skewX(sin(elapsed * 5.5f) * 1.6f)
             translate(-512f, -620f)
         }) {
             drawPath(
