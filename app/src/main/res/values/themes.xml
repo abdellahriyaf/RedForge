@@ -6,4 +6,9 @@
         <item name="android:windowBackground">@color/forge_black</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <style name="Theme.RedForge.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#070403</item>
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        <item name="postSplashScreenTheme">@style/Theme.RedForge</item>
+    </style>
 </resources>
