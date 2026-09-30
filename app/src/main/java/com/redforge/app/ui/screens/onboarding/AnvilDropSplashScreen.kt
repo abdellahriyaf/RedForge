@@ -34,9 +34,9 @@ private const val G = 6000f
 private const val Y0 = -950f
 private const val GROUND = 0f
 private const val RESTITUTION = 0.30f
-private const val HIT_AFTER_T0 = 0.43238017f
+private const val HIT_AFTER_T0 = 0.43333334f
 private const val FIRST_HIT = T0 + HIT_AFTER_T0
-private const val VMAX = 3494.281f
+private const val VMAX = 3500f
 
 private data class Particle(
     val x: Float,
