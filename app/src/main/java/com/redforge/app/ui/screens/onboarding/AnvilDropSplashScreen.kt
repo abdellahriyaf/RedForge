@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,6 +35,9 @@ private const val G = 6000f
 private const val Y0 = -950f
 private const val GROUND = 0f
 private const val RESTITUTION = 0.30f
+private const val HIT_AFTER_T0 = 0.43238017f
+private const val FIRST_HIT = T0 + HIT_AFTER_T0
+private const val VMAX = 3494.281f
 
 private data class Particle(
     val x: Float,
@@ -66,32 +70,24 @@ private fun outBack(x: Float): Float {
 
 private fun preSimulatedAnvil(t: Float): Pair<Float, Float> {
     if (t < T0) return Y0 to 900f
-    var y = Y0
-    var v = 900f
-    var time = 0f
-    var firstHit = false
-    val dt = 1f / 240f
-    while (time < 3f) {
-        v += G * dt
-        y += v * dt
-        time += dt
-        if (y >= GROUND) {
-            val speed = v
-            y = GROUND
-            if (!firstHit && speed > 140f) {
-                firstHit = true
-                if (t >= T0 + time) {
-                    return (GROUND - speed * RESTITUTION * (t - (T0 + time))).coerceAtLeast(-120f) to
-                        (-speed * RESTITUTION)
-                }
-                v = -speed * RESTITUTION
-            } else {
-                v = 0f
-            }
-        }
-        if (t <= T0 + time) return y to v
+
+    val flightTime = t - T0
+    if (flightTime <= HIT_AFTER_T0) {
+        val y = Y0 + 900f * flightTime + 0.5f * G * flightTime * flightTime
+        val v = 900f + G * flightTime
+        return y to v
     }
-    return y to v
+
+    val reboundTime = flightTime - HIT_AFTER_T0
+    val reboundVelocity = -VMAX * RESTITUTION
+    val reboundDuration = (-2f * reboundVelocity / G)
+    if (reboundTime <= reboundDuration) {
+        val y = reboundVelocity * reboundTime + 0.5f * G * reboundTime * reboundTime
+        val v = reboundVelocity + G * reboundTime
+        return y to v
+    }
+
+    return GROUND to 0f
 }
 
 @Composable
@@ -172,7 +168,7 @@ private fun DrawScope.drawAnvilDrop(
     anvilFront: Path
 ) {
     val (y, velocity) = preSimulatedAnvil(elapsed)
-    val impactTime = 1.15f
+    val impactTime = FIRST_HIT
     val impact = clamp((elapsed - impactTime) * 4.2f)
     val heatStart = 1.50f
     val heat = clamp((elapsed - heatStart) / 1.25f)
