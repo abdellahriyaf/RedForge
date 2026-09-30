@@ -7,6 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.provides
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
@@ -26,8 +28,9 @@ fun BodyMeasurementScreen() {
     val measurements by vm.measurements.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Scaffold(
+            floatingActionButton = {
             FloatingActionButton(onClick = { showAdd = true }) { Icon(Icons.Filled.Add, contentDescription = "Add checkpoint") }
         }
     ) { padding ->
@@ -39,6 +42,7 @@ fun BodyMeasurementScreen() {
             LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(padding)) {
                 items(measurements, key = { it.id }) { m -> MeasurementCard(m) { vm.delete(m) } }
             }
+        }
         }
     }
 
