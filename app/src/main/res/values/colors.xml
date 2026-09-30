@@ -5,6 +5,7 @@
     <color name="forge_red_dark">#A50E13</color>
     <color name="forge_red_bright">#FF3B30</color>
     <color name="forge_black">#0B0B0D</color>
+    <color name="forge_intro_black">#070403</color>
     <color name="forge_charcoal">#17171A</color>
     <color name="forge_surface">#1F1F23</color>
     <color name="forge_surface_high">#2A2A2F</color>
