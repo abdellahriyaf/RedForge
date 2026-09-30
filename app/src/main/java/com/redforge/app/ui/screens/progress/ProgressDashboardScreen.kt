@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.provides
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -39,8 +41,9 @@ fun ProgressDashboardScreen(
     }
     val summaries by vm.summaries.collectAsState()
 
-    LazyColumn(
-        contentPadding = PaddingValues(20.dp),
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        LazyColumn(
+            contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
@@ -93,8 +96,8 @@ fun ProgressDashboardScreen(
                 }
             }
         }
+        }
     }
-}
 
 @Composable
 private fun ExerciseProgressCard(
