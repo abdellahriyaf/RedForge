@@ -198,4 +198,4 @@ private fun TrendRow(point: ExerciseTrendPoint, mode: TrendMode) {
             style = MaterialTheme.typography.bodyLarge
         )
     }
-}
+}}
