@@ -21,14 +21,14 @@ interface ExerciseDao {
     @Query("SELECT * FROM exercises WHERE name = :name LIMIT 1")
     suspend fun getByName(name: String): Exercise?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(exercise: Exercise): Long
+    @Upsert
+    suspend fun upsert(exercise: Exercise)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertAll(exercises: List<Exercise>)
 
-    @Delete
-    suspend fun delete(exercise: Exercise)
+    @Query("UPDATE exercises SET isArchived = 1 WHERE id = :exerciseId")
+    suspend fun archive(exerciseId: Long)
 
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun count(): Int
