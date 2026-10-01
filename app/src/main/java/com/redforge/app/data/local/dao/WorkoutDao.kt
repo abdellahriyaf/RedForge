@@ -96,8 +96,8 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sessions WHERE id = :id")
     suspend fun getSession(id: Long): WorkoutSession?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSession(session: WorkoutSession): Long
+    @Upsert
+    suspend fun upsertSession(session: WorkoutSession)
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
@@ -134,8 +134,8 @@ interface WorkoutDao {
     @Query("SELECT COUNT(*) FROM set_entries WHERE workoutSessionId = :sessionId")
     suspend fun getSetCountForSession(sessionId: Long): Int
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSet(set: SetEntry): Long
+    @Upsert
+    suspend fun upsertSet(set: SetEntry)
 
     @Query("SELECT COALESCE(MAX(setIndex), 0) FROM set_entries WHERE workoutSessionId = :sessionId AND exerciseId = :exerciseId")
     suspend fun getMaxSetIndex(sessionId: Long, exerciseId: Long): Int
