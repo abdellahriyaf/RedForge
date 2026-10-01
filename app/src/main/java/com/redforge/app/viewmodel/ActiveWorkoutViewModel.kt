@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.redforge.app.data.datastore.SettingsDataStore
 import com.redforge.app.data.datastore.WeightUnit
 import com.redforge.app.data.local.entities.*
+import com.redforge.app.domain.time.WorkoutClock
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
@@ -105,7 +106,7 @@ class ActiveWorkoutViewModel(
                 set(java.util.Calendar.MILLISECOND, 0)
             }.timeInMillis
             val completedToday = allSessions.any { session ->
-                session.completed &&
+                session.status == WorkoutSessionStatus.COMPLETED &&
                     session.splitDayId != null &&
                     days.any { it.id == session.splitDayId } &&
                     session.startedAt >= todayStart
@@ -304,7 +305,7 @@ class ActiveWorkoutViewModel(
         viewModelScope.launch {
             try {
                 sessionWriteMutex.withLock {
-                    workoutRepository.deleteSession(session)
+                    workoutRepository.abandonSession(session)
                 }
 
                 _uiState.value = _uiState.value.copy(
