@@ -36,10 +36,11 @@ class HistoryViewModel(
             workoutRepository.observeAllSessions(),
             workoutRepository.observeAllSets()
         ) { sessions, allSets ->
+            val setsBySession = allSets.groupBy { it.workoutSessionId }
             sessions
                 .filter { it.status != WorkoutSessionStatus.ACTIVE }
                 .map { session ->
-                    val sets = allSets.filter { it.workoutSessionId == session.id }
+                    val sets = setsBySession[session.id].orEmpty()
                     HistorySessionUi(
                         session = session,
                         setCount = sets.size,
@@ -50,6 +51,7 @@ class HistoryViewModel(
                     )
                 }
         }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 }
 
