@@ -33,6 +33,6 @@ interface ExerciseDao {
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun count(): Int
 
-    @Query("SELECT * FROM exercises WHERE isArchived = 0 ORDER BY name ASC")
+    @Query("SELECT * FROM exercises ORDER BY name ASC")
     suspend fun getAllOnce(): List<Exercise>
 }
