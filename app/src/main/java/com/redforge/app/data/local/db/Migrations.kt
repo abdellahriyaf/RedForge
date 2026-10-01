@@ -33,4 +33,53 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+/**
+ * v3 -> v4: replaces the ambiguous completed boolean with an explicit
+ * workout lifecycle. Existing unfinished sessions remain ACTIVE until the
+ * first lifecycle read archives any session that has crossed a calendar day.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS workout_sessions_new (
+                id INTEGER NOT NULL,
+                splitDayId INTEGER,
+                splitDayNameSnapshot TEXT NOT NULL,
+                startedAt INTEGER NOT NULL,
+                endedAt INTEGER,
+                status TEXT NOT NULL,
+                notes TEXT NOT NULL,
+                PRIMARY KEY(id)
+            )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            INSERT INTO workout_sessions_new (
+                id, splitDayId, splitDayNameSnapshot,
+                startedAt, endedAt, status, notes
+            )
+            SELECT
+                id, splitDayId, splitDayNameSnapshot,
+                startedAt, endedAt,
+                CASE
+                    WHEN completed = 1 THEN 'COMPLETED'
+                    ELSE 'ACTIVE'
+                END,
+                notes
+            FROM workout_sessions
+            """.trimIndent()
+        )
+
+        db.execSQL("DROP TABLE workout_sessions")
+        db.execSQL("ALTER TABLE workout_sessions_new RENAME TO workout_sessions")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_workout_sessions_status_startedAt " +
+                "ON workout_sessions(status, startedAt)"
+        )
+    }
+}
+
