@@ -199,8 +199,8 @@ object StreakCalculator {
         fun differenceFrom(other: CalendarDay): Int {
             // Calendar-day ordinal arithmetic keeps DST transitions from changing the
             // distance and avoids the previous day-by-day traversal (O(gapDays)).
-            val thisYear = if (era == Calendar.AD) year else 1 - year
-            val otherYear = if (other.era == Calendar.AD) other.year else 1 - other.year
+            val thisYear = if (era == 1) year else 1 - year
+            val otherYear = if (other.era == 1) other.year else 1 - other.year
             return (daysBeforeYear(thisYear) + dayOfYear - 1L -
                 (daysBeforeYear(otherYear) + other.dayOfYear - 1L)).toInt()
         }
