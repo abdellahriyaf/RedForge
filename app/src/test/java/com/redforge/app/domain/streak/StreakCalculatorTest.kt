@@ -28,6 +28,39 @@ class StreakCalculatorTest {
     }
 
     @Test
+    fun `partial and abandoned sessions do not count toward streaks`() {
+        val monday = millis(2026, Calendar.SEPTEMBER, 7, 18)
+        val tuesday = millis(2026, Calendar.SEPTEMBER, 8, 18)
+        val wednesday = millis(2026, Calendar.SEPTEMBER, 9, 18)
+
+        val sessions = listOf(
+            completed(monday),
+            WorkoutSession(
+                splitDayId = 1L,
+                splitDayNameSnapshot = "Training",
+                startedAt = tuesday,
+                status = WorkoutSessionStatus.PARTIAL
+            ),
+            WorkoutSession(
+                splitDayId = 1L,
+                splitDayNameSnapshot = "Training",
+                startedAt = wednesday,
+                status = WorkoutSessionStatus.ABANDONED
+            )
+        )
+
+        val result = StreakCalculator.compute(
+            sessions,
+            nowMillis = wednesday,
+            timeZone = zone
+        )
+
+        assertEquals(1, result.current)
+        assertEquals(1, result.longest)
+        assertEquals(monday, result.lastCompletedDayMillis)
+    }
+
+    @Test
     fun `gap larger than maximum breaks current streak`() {
         val monday = millis(2026, Calendar.SEPTEMBER, 7, 18)
         val thursday = millis(2026, Calendar.SEPTEMBER, 10, 18)
