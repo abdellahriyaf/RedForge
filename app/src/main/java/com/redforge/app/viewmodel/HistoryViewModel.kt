@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.redforge.app.data.local.entities.SetEntry
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
@@ -35,7 +36,7 @@ class HistoryViewModel(
             workoutRepository.observeAllSets()
         ) { sessions, allSets ->
             sessions
-                .filter { it.completed }
+                .filter { it.status != WorkoutSessionStatus.ACTIVE }
                 .map { session ->
                     val sets = allSets.filter { it.workoutSessionId == session.id }
                     HistorySessionUi(
@@ -76,7 +77,7 @@ class HistoryDetailViewModel(
 
     private suspend fun load() {
         val session = workoutRepository.getSession(sessionId)
-        if (session == null || !session.completed) {
+        if (session == null || session.status == WorkoutSessionStatus.ACTIVE) {
             _uiState.value = UiState(
                 loading = false,
                 error = "That workout could not be found."
