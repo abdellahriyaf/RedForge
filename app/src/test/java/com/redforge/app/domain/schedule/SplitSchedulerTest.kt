@@ -2,6 +2,7 @@ package com.redforge.app.domain.schedule
 
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Calendar
@@ -77,7 +78,7 @@ class SplitSchedulerTest {
         splitDayId = dayId,
         splitDayNameSnapshot = "Day",
         startedAt = startedAt,
-        completed = true
+        status = WorkoutSessionStatus.COMPLETED
     )
 
     private fun millis(year: Int, month: Int, day: Int, hour: Int = 18): Long =
