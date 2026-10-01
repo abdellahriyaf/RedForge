@@ -39,19 +39,16 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun startSession(splitDayId: Long?, splitDayName: String): Long =
         dao.upsertSession(WorkoutSession(splitDayId = splitDayId, splitDayNameSnapshot = splitDayName))
 
-    suspend fun completeSession(id: Long) = dao.completeSession(id)
+    suspend fun completeSession(id: Long): Boolean =
+        dao.completeSession(id) == 1
 
     /**
      * Explicit user discard never destroys logged sets. Empty sessions can be
-     * removed; sessions with data become ABANDONED history.
+     * removed; sessions with data become ABANDONED history. The whole decision
+     * is made atomically against the current lifecycle state.
      */
-    suspend fun abandonSession(session: WorkoutSession) {
-        if (dao.getSetCountForSession(session.id) == 0) {
-            dao.deleteSessionAndSets(session)
-        } else {
-            dao.abandonSession(session.id)
-        }
-    }
+    suspend fun abandonSession(session: WorkoutSession): Boolean =
+        dao.abandonActiveSession(session.id)
 
     suspend fun deleteSession(session: WorkoutSession) = dao.deleteSessionAndSets(session)
 
@@ -59,12 +56,10 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun getSetsOnce(sessionId: Long) = dao.getSetsForSessionOnce(sessionId)
 
     /**
-     * The single most important call in the data layer: writes one set to
-     * Room synchronously with the suspend call site (a Room coroutine call
-     * commits before returning). Callers should invoke this the instant a
-     * set is confirmed — never batch sets in memory to write "later".
+     * Writes one set only while the session is ACTIVE, atomically with its
+     * set-index allocation.
      */
-    suspend fun logSet(set: SetEntry): Long = dao.upsertSet(set)
+    suspend fun logSet(set: SetEntry): Boolean = dao.logSetIfActive(set)
 
     suspend fun updateSet(set: SetEntry) = dao.updateSet(set)
     suspend fun deleteSet(set: SetEntry) = dao.deleteSet(set)
