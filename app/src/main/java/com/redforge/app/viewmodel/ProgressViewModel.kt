@@ -40,7 +40,8 @@ class ProgressViewModel(
                     .sortedByDescending { it.totalVolumeAllTime }
             }
         }
-        .flowOn(Dispatchers.Default)\n        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private fun buildSummary(exercise: Exercise, sets: List<SetEntry>): ExerciseProgressSummary? {
         if (sets.isEmpty()) return null
@@ -48,11 +49,13 @@ class ProgressViewModel(
         val midpoint = sorted.size / 2
         val earlierHalf = sorted.take(maxOf(midpoint, 1))
         val recentHalf = sorted.drop(midpoint)
+        val workingSets = sets.filter { !it.isWarmup }
         val volumeChange = StrengthFormulas.percentChange(
             StrengthFormulas.totalVolume(earlierHalf),
             StrengthFormulas.totalVolume(recentHalf.ifEmpty { earlierHalf })
         )
-        val sessionCount = sorted.asSequence().map { it.workoutSessionId }.distinct().count()\n        return ExerciseProgressSummary(
+        val sessionCount = sorted.asSequence().map { it.workoutSessionId }.distinct().count()
+        return ExerciseProgressSummary(
             exercise = exercise,
             bestEstimated1RM = StrengthFormulas.displayRounded(StrengthFormulas.bestEstimated1RM(workingSets)),
             totalVolumeAllTime = StrengthFormulas.displayRounded(StrengthFormulas.totalVolume(workingSets)),
