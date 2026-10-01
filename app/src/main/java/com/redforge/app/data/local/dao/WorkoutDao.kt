@@ -51,7 +51,7 @@ interface WorkoutDao {
     @Query("""
         UPDATE workout_sessions
         SET status = 'ABANDONED', endedAt = :endedAt
-        WHERE id = :id AND status = 'ACTIVE'
+        WHERE id = :id AND status = 'ACTIVE' AND startedAt >= :todayStart
     """)
     suspend fun abandonSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Int
 
