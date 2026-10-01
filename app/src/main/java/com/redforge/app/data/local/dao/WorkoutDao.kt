@@ -63,8 +63,6 @@ interface WorkoutDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSession(session: WorkoutSession): Long
 
-    @Query("UPDATE workout_sessions SET completed = 1, endedAt = :endedAt WHERE id = :id")
-    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis())
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
@@ -87,7 +85,7 @@ interface WorkoutDao {
     @Query("""
         SELECT se.* FROM set_entries se
         INNER JOIN workout_sessions ws ON ws.id = se.workoutSessionId
-        WHERE se.exerciseId = :exerciseId AND ws.completed = 1
+        WHERE se.exerciseId = :exerciseId AND ws.status = 'COMPLETED'
         ORDER BY se.loggedAt DESC LIMIT :limit
     """)
     suspend fun getRecentSetsForExercise(exerciseId: Long, limit: Int = 50): List<SetEntry>
