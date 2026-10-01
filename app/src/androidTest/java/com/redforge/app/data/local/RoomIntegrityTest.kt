@@ -70,7 +70,7 @@ class RoomIntegrityTest {
         db.splitDao().deleteSplit(Split(id = splitId, name = "Test Split"))
 
         assertTrue(db.splitDao().getDaysOnce(splitId).isEmpty())
-        assertTrue(db.exerciseDao().getById(exerciseId)?.let { false } ?: true)
+        assertTrue(db.exerciseDao().getById(exerciseId)?.isArchived == false)
     }
 
     @Test
