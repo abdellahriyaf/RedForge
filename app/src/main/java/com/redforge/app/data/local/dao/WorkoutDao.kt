@@ -10,77 +10,86 @@ import kotlinx.coroutines.flow.Flow
 interface WorkoutDao {
 
     /**
-     * Returns only an ACTIVE session from the requested calendar day.
-     * Older ACTIVE sessions are archived by the repository before this query.
-     */
-    @Query("""
-        SELECT * FROM workout_sessions
-        WHERE status = 'ACTIVE' AND startedAt >= :todayStart
-        ORDER BY startedAt DESC LIMIT 1
-    """)
-    suspend fun getInProgressSession(todayStart: Long): WorkoutSession?
-
-    /**
-     * Legacy reactive observer retained for callers that need the raw ACTIVE stream.
-     * Callers must apply the calendar-day rule before presenting it as resumable.
+     * Returns the newest ACTIVE session. The repository first archives sessions
+     * that have been inactive for the lifecycle timeout, not sessions that
+     * merely crossed midnight.
      */
     @Query("""
         SELECT * FROM workout_sessions
         WHERE status = 'ACTIVE'
         ORDER BY startedAt DESC LIMIT 1
     """)
-    fun observeInProgressSession(): Flow<WorkoutSession?>
+    suspend fun getInProgressSession(): WorkoutSession?
+
+    @Query("""
+        SELECT ws.id FROM workout_sessions ws
+        WHERE ws.status = 'ACTIVE'
+          AND MAX(
+              ws.startedAt,
+              COALESCE(
+                  (SELECT MAX(se.loggedAt) FROM set_entries se WHERE se.workoutSessionId = ws.id),
+                  ws.startedAt
+              )
+          ) < :expiryCutoff
+    """)
+    suspend fun getExpiredActiveSessionIds(expiryCutoff: Long): List<Long>
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'PARTIAL', endedAt = :endedAt
-        WHERE status = 'ACTIVE' AND startedAt < :todayStart
+        WHERE status = 'ACTIVE'
+          AND MAX(
+              startedAt,
+              COALESCE(
+                  (SELECT MAX(se.loggedAt) FROM set_entries se WHERE se.workoutSessionId = workout_sessions.id),
+                  startedAt
+              )
+          ) < :expiryCutoff
     """)
     suspend fun archiveExpiredSessions(
-        todayStart: Long,
+        expiryCutoff: Long,
         endedAt: Long
     ): Int
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'COMPLETED', endedAt = :endedAt
-        WHERE id = :id AND status = 'ACTIVE' AND startedAt >= :todayStart
+        WHERE id = :id AND status = 'ACTIVE'
     """)
-    suspend fun completeSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Int
+    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'ABANDONED', endedAt = :endedAt
-        WHERE id = :id AND status = 'ACTIVE' AND startedAt >= :todayStart
+        WHERE id = :id AND status = 'ACTIVE'
     """)
-    suspend fun abandonSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Int
+    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
 
     /**
      * Atomically verifies that a session is still ACTIVE and then either removes
      * an empty session or preserves its logged sets as ABANDONED history.
      */
     @Transaction
-    suspend fun abandonActiveSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
+    suspend fun abandonActiveSession(id: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
         val session = getSession(id) ?: return false
-        if (session.status != WorkoutSessionStatus.ACTIVE || session.startedAt < todayStart) return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
 
         if (getSetCountForSession(id) == 0) {
             deleteSessionAndSets(session)
         } else {
-            if (abandonSession(id, todayStart, endedAt) != 1) return false
+            if (abandonSession(id, endedAt) != 1) return false
         }
         return true
     }
 
     /**
      * Atomically verifies the session lifecycle and writes the set.
-     * This prevents midnight archival from occurring between an ACTIVE check
-     * and the actual set insert.
+     * Crossing midnight does not invalidate an otherwise active session.
      */
     @Transaction
-    suspend fun logSetIfActive(set: SetEntry, todayStart: Long): Boolean {
+    suspend fun logSetIfActive(set: SetEntry): Boolean {
         val session = getSession(set.workoutSessionId) ?: return false
-        if (session.status != WorkoutSessionStatus.ACTIVE || session.startedAt < todayStart) return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
 
         val nextIndex = getMaxSetIndex(set.workoutSessionId, set.exerciseId) + 1
         upsertSet(set.copy(setIndex = nextIndex))
