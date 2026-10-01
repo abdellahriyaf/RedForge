@@ -147,7 +147,7 @@ fun HomeScreen(
             AlertDialog(
                 onDismissRequest = { showResetDialog = false },
                 title = { Text("Reset workout?") },
-                text = { Text("This removes the unfinished workout and its logged sets. It will not affect completed workout history.") },
+                text = { Text("This ends the current workout. Any logged sets are preserved in History as an abandoned session.") },
                 confirmButton = {
                     TextButton(onClick = {
                         showResetDialog = false
