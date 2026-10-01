@@ -77,7 +77,7 @@ jobs:
   instrumented:
     name: Instrumented database and lifecycle tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -97,11 +97,12 @@ jobs:
       - name: Run Android instrumented tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 34
+          api-level: 30
           target: google_apis
           arch: x86_64
           profile: pixel_2
-          emulator-boot-timeout: 600
-          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          force-avd-creation: true
+          emulator-boot-timeout: 300
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu off
           disable-animations: true
           script: ./gradlew connectedDebugAndroidTest --stacktrace --console=plain
