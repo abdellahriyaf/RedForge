@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.core.content.FileProvider
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.redforge.app.data.local.db.RedForgeDatabase
+import com.redforge.app.data.local.entities.Exercise
 import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
@@ -30,6 +32,36 @@ class BackupValidationTest {
         )
 
         assertTrue(DataBackupUtil.isValidBackup(context, uri))
+    }
+
+
+    @Test
+    fun exportAndImportRoundTripPreservesDatabaseData() {
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
+
+        val database = RedForgeDatabase.getInstance(context)
+        database.exerciseDao().upsert(
+            Exercise(
+                name = "Backup Round Trip Exercise",
+                muscleGroup = "Test",
+                isCustom = true
+            )
+        )
+
+        val backupUri = DataBackupUtil.exportBackup(context)
+        assertTrue(backupUri != null)
+        assertTrue(DataBackupUtil.isValidBackup(context, backupUri!!))
+
+        assertTrue(DataBackupUtil.importBackup(context, backupUri))
+
+        RedForgeDatabase.closeInstance()
+        val restored = RedForgeDatabase.getInstance(context)
+        assertTrue(
+            restored.exerciseDao().getByName("Backup Round Trip Exercise") != null
+        )
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
     }
 
     @Test
