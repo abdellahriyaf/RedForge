@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import com.redforge.app.data.local.db.RedForgeDatabase
 import com.redforge.app.data.local.entities.Exercise
 import com.redforge.app.data.local.entities.SetEntry
@@ -148,7 +149,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun activatingSplitLeavesExactlyOneActiveSplit() {
+    fun activatingSplitLeavesExactlyOneActiveSplit() = runBlocking {
         val firstId = db.splitDao().upsertSplit(Split(name = "First", isActive = true))
         val secondId = db.splitDao().upsertSplit(Split(name = "Second"))
 
