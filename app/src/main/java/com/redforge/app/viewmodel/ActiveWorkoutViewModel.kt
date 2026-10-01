@@ -284,7 +284,7 @@ class ActiveWorkoutViewModel(
 
         viewModelScope.launch {
             try {
-                sessionWriteMutex.withLock {
+                val expired = sessionWriteMutex.withLock {
                     val freshSession = workoutRepository.getSession(session.id)
                     if (freshSession?.status != WorkoutSessionStatus.ACTIVE) {
                         _uiState.value = _uiState.value.copy(
@@ -292,15 +292,19 @@ class ActiveWorkoutViewModel(
                             isFinishing = false,
                             error = "This workout day has ended. Your logged sets were preserved in History."
                         )
-                        return@withLock
+                        true
+                    } else {
+                        workoutRepository.completeSession(session.id)
+                        false
                     }
-                    workoutRepository.completeSession(session.id)
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    isFinishing = false,
-                    finished = true
-                )
+                if (!expired) {
+                    _uiState.value = _uiState.value.copy(
+                        isFinishing = false,
+                        finished = true
+                    )
+                }
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isFinishing = false,
