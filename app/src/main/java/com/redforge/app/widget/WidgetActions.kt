@@ -10,7 +10,6 @@ import com.redforge.app.domain.schedule.SplitScheduler
 import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.domain.time.WorkoutClock
 import kotlinx.coroutines.flow.first
-import java.util.Calendar
 
 class SkipWorkoutAction : ActionCallback {
     override suspend fun onAction(
@@ -34,7 +33,7 @@ class SkipWorkoutAction : ActionCallback {
             session.status == WorkoutSessionStatus.COMPLETED &&
                 session.splitDayId != null &&
                 days.any { it.id == session.splitDayId } &&
-                startOfDayMillis(session.startedAt) == todayStart
+                WorkoutClock.startOfDayMillis(session.startedAt) == todayStart
         }
         if (alreadyCompleted) return
 
