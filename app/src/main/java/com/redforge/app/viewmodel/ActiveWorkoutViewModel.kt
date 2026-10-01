@@ -157,8 +157,12 @@ class ActiveWorkoutViewModel(
                     val blocks = dayExercises.sortedBy { it.orderIndex }.mapNotNull { dayExercise ->
                         val exercise = exerciseRepository.getById(dayExercise.exerciseId) ?: return@mapNotNull null
                         val loggedForThis = sets.filter { it.exerciseId == dayExercise.exerciseId }.sortedBy { it.setIndex }
-                        val recentPrevious = workoutRepository.getRecentSetsForExercise(dayExercise.exerciseId, 1)
-                            .firstOrNull()
+                        val completedHistory = workoutRepository.getRecentSetsForExercise(dayExercise.exerciseId, 1000)
+                        val derivedLoggedSets = derivePersonalRecords(
+                            currentSets = loggedForThis,
+                            completedHistory = completedHistory
+                        )
+                        val recentPrevious = completedHistory.firstOrNull()
                         val targetSets = if (_uiState.value.isDeloadCycle) {
                             maxOf(1, ceil(dayExercise.targetSets * DELOAD_REMAINING_VOLUME_FACTOR).toInt())
                         } else {
@@ -167,7 +171,7 @@ class ActiveWorkoutViewModel(
                         WorkoutExerciseBlock(
                             dayExercise = dayExercise,
                             exercise = exercise,
-                            loggedSets = loggedForThis,
+                            loggedSets = derivedLoggedSets,
                             lastPreviousSet = recentPrevious,
                             targetSetsForToday = targetSets,
                             restSecondsForToday = if (dayExercise.targetRestSeconds > 0) {
@@ -206,7 +210,7 @@ class ActiveWorkoutViewModel(
 
                 val nextIndex = workoutRepository.getMaxSetIndex(session.id, exerciseId) + 1
 
-                var isPr = false
+                var prCelebration: PrCelebration? = null
                 if (!isWarmup) {
                     val completedHistory = workoutRepository.getRecentSetsForExercise(exerciseId, 1000)
                     val currentSessionSets = workoutRepository.getSetsOnce(session.id)
@@ -214,8 +218,7 @@ class ActiveWorkoutViewModel(
                     val previousBest = StrengthFormulas.bestEstimated1RM(completedHistory + currentSessionSets)
                     val newEstimate = StrengthFormulas.estimated1RM(weight, reps)
                     if (previousBest > 0.0 && newEstimate > previousBest) {
-                        isPr = true
-                        _prEvent.value = PrCelebration(
+                        prCelebration = PrCelebration(
                             exerciseName = block.exercise.name,
                             newEstimated1RM = StrengthFormulas.displayRounded(newEstimate),
                             previousBest = StrengthFormulas.displayRounded(previousBest)
@@ -232,7 +235,9 @@ class ActiveWorkoutViewModel(
                         reps = reps,
                         isWarmup = isWarmup,
                         rpe = rpe,
-                        isPersonalRecord = isPr
+                        // PR state is derived from history when the workout is read.
+                        // Do not persist a flag that can become stale after edits/deletes.
+                        isPersonalRecord = false
                     )
                 )
 
@@ -244,9 +249,33 @@ class ActiveWorkoutViewModel(
                     return@withLock
                 }
 
+                prCelebration?.let { _prEvent.value = it }
+
                 if (!isWarmup && isLastInSupersetGroup(block.dayExercise)) {
                     _lastLoggedSetTriggersRest.value = block.restSecondsForToday
                 }
+            }
+        }
+    }
+
+    private fun derivePersonalRecords(
+        currentSets: List<SetEntry>,
+        completedHistory: List<SetEntry>
+    ): List<SetEntry> {
+        var previousBest = StrengthFormulas.bestEstimated1RM(
+            completedHistory.filter { !it.isWarmup }
+        )
+
+        return currentSets.map { set ->
+            if (set.isWarmup) {
+                set.copy(isPersonalRecord = false)
+            } else {
+                val estimate = StrengthFormulas.estimated1RM(set.weight, set.reps)
+                val isPr = previousBest > 0.0 && estimate > previousBest
+                if (estimate > previousBest) {
+                    previousBest = estimate
+                }
+                set.copy(isPersonalRecord = isPr)
             }
         }
     }
