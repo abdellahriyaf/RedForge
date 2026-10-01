@@ -4,10 +4,15 @@ import java.util.Calendar
 import java.util.TimeZone
 
 /**
- * Single source of truth for calendar-day boundaries used by workout lifecycle
- * decisions. Workout sessions are calendar-day based, not rolling 24-hour based.
+ * Calendar helpers plus the lifecycle timeout for an active workout session.
+ *
+ * A workout session is not tied to midnight: a workout started late at night
+ * remains resumable after midnight. The timeout is a safety valve for sessions
+ * that were actually abandoned without an explicit finish/discard action.
  */
 object WorkoutClock {
+
+    const val ACTIVE_SESSION_TIMEOUT_MILLIS: Long = 24L * 60L * 60L * 1000L
 
     fun nowMillis(): Long = System.currentTimeMillis()
 
@@ -35,4 +40,9 @@ object WorkoutClock {
         timeZone: TimeZone = TimeZone.getDefault()
     ): Boolean = startOfDayMillis(firstMillis, timeZone) <
         startOfDayMillis(secondMillis, timeZone)
+
+    fun isActiveSessionExpired(
+        lastActivityMillis: Long,
+        nowMillis: Long = nowMillis()
+    ): Boolean = nowMillis - lastActivityMillis >= ACTIVE_SESSION_TIMEOUT_MILLIS
 }
