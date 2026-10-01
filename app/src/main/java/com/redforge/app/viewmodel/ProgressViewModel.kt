@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.redforge.app.data.local.entities.Exercise
 import com.redforge.app.data.local.entities.SetEntry
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
