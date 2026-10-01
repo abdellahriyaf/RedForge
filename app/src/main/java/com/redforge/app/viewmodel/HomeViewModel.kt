@@ -90,7 +90,7 @@ class HomeViewModel(
                 isSameCalendarDay(session.startedAt, today)
         }
         val weekStart = startOfWeekMillis(today)
-        val weekSessions = allSessions.filter { it.completed && it.startedAt >= weekStart && it.startedAt <= today }
+        val weekSessions = allSessions.filter { it.status == WorkoutSessionStatus.COMPLETED && it.startedAt >= weekStart && it.startedAt <= today }
         val weekSessionIds = weekSessions.map { it.id }.toSet()
         val weekSetsList = allSets.filter { it.workoutSessionId in weekSessionIds }
         val weekSets = weekSetsList.size
@@ -152,8 +152,6 @@ class HomeViewModel(
     }
 
     private fun isSameCalendarDay(firstMillis: Long, secondMillis: Long): Boolean {
-        val a = Calendar.getInstance().apply { timeInMillis = firstMillis }
-        val b = Calendar.getInstance().apply { timeInMillis = secondMillis }
         return WorkoutClock.isSameCalendarDay(firstMillis, secondMillis)
     }
 
