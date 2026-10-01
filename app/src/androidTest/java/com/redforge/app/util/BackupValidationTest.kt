@@ -24,15 +24,16 @@ class BackupValidationTest {
 
     @Test
     fun validBackupEnvelopeIsAccepted() = runBlocking {
-        val uri = writeArchive(
-            listOf(
-                "redforge_backup_marker.txt" to
-                    "RedForge backup|format=1|dbVersion=5|created=test",
-                "redforge.db" to "not a real database"
-            )
-        )
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
 
-        assertTrue(DataBackupUtil.isValidBackup(context, uri))
+        val uri = DataBackupUtil.exportBackup(context)
+
+        assertTrue(uri != null)
+        assertTrue(DataBackupUtil.isValidBackup(context, uri!!))
+
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
     }
 
 
