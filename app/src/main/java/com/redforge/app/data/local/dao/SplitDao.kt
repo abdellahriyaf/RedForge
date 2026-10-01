@@ -61,6 +61,14 @@ interface SplitDao {
     @Query("DELETE FROM split_day_exercises WHERE splitDayId = :dayId")
     suspend fun clearExercisesForDay(dayId: Long)
 
+    @Transaction
+    suspend fun replaceDayExercises(dayId: Long, exercises: List<SplitDayExercise>) {
+        clearExercisesForDay(dayId)
+        exercises.forEachIndexed { index, entry ->
+            upsertDayExercise(entry.copy(splitDayId = dayId, orderIndex = index))
+        }
+    }
+
     @Query("SELECT COUNT(*) FROM split_days WHERE splitId = :splitId")
     suspend fun countDays(splitId: Long): Int
 }
