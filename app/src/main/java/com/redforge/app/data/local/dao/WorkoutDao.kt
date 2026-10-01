@@ -44,30 +44,30 @@ interface WorkoutDao {
     @Query("""
         UPDATE workout_sessions
         SET status = 'COMPLETED', endedAt = :endedAt
-        WHERE id = :id AND status = 'ACTIVE'
+        WHERE id = :id AND status = 'ACTIVE' AND startedAt >= :todayStart
     """)
-    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
+    suspend fun completeSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Int
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'ABANDONED', endedAt = :endedAt
         WHERE id = :id AND status = 'ACTIVE'
     """)
-    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
+    suspend fun abandonSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Int
 
     /**
      * Atomically verifies that a session is still ACTIVE and then either removes
      * an empty session or preserves its logged sets as ABANDONED history.
      */
     @Transaction
-    suspend fun abandonActiveSession(id: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
+    suspend fun abandonActiveSession(id: Long, todayStart: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
         val session = getSession(id) ?: return false
-        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+        if (session.status != WorkoutSessionStatus.ACTIVE || session.startedAt < todayStart) return false
 
         if (getSetCountForSession(id) == 0) {
             deleteSessionAndSets(session)
         } else {
-            if (abandonSession(id, endedAt) != 1) return false
+            if (abandonSession(id, todayStart, endedAt) != 1) return false
         }
         return true
     }
@@ -78,9 +78,9 @@ interface WorkoutDao {
      * and the actual set insert.
      */
     @Transaction
-    suspend fun logSetIfActive(set: SetEntry): Boolean {
+    suspend fun logSetIfActive(set: SetEntry, todayStart: Long): Boolean {
         val session = getSession(set.workoutSessionId) ?: return false
-        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+        if (session.status != WorkoutSessionStatus.ACTIVE || session.startedAt < todayStart) return false
 
         val nextIndex = getMaxSetIndex(set.workoutSessionId, set.exerciseId) + 1
         upsertSet(set.copy(setIndex = nextIndex))
