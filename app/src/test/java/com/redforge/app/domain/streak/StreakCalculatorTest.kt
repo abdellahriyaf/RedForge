@@ -1,6 +1,7 @@
 package com.redforge.app.domain.streak
 
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Calendar
@@ -46,7 +47,7 @@ class StreakCalculatorTest {
         splitDayId = 1L,
         splitDayNameSnapshot = "Training",
         startedAt = startedAt,
-        completed = true
+        status = WorkoutSessionStatus.COMPLETED
     )
 
     private fun millis(year: Int, month: Int, day: Int, hour: Int): Long =
