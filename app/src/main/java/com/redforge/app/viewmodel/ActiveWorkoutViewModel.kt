@@ -73,6 +73,8 @@ class ActiveWorkoutViewModel(
     }
 
     private suspend fun resumeOrStart() {
+        // Expired sessions are archived with their sets intact; only today's session can resume.
+        workoutRepository.archiveExpiredSessions()
         val settings = settingsDataStore.settingsFlow.first()
         val activeSplit = splitRepository.observeActiveSplit().first()
         val isDeload = activeSplit?.isDeloadCycle ?: false

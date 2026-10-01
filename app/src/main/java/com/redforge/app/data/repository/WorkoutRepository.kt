@@ -8,7 +8,11 @@ import kotlinx.coroutines.flow.Flow
 class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeInProgressSession(): Flow<WorkoutSession?> = dao.observeInProgressSession()
-    suspend fun getInProgressSession(): WorkoutSession? = dao.getInProgressSession()
+    suspend fun getInProgressSession(): WorkoutSession? {
+        dao.archiveExpiredSessions()
+        return dao.getInProgressSession()
+    }
+    suspend fun archiveExpiredSessions() = dao.archiveExpiredSessions()
 
     fun observeAllSessions(): Flow<List<WorkoutSession>> = dao.observeAllSessions()
     suspend fun getSessionsBetween(from: Long, to: Long) = dao.getSessionsBetween(from, to)

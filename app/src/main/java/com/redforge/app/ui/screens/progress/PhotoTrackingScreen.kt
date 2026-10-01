@@ -116,8 +116,9 @@ fun PhotoTrackingScreen() {
         }
     }
 
-    Scaffold(
-        floatingActionButton = {
+    CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+        Scaffold(
+            floatingActionButton = {
             FloatingActionButton(
                 onClick = { showSourceDialog = true }
             ) {
@@ -162,6 +163,7 @@ fun PhotoTrackingScreen() {
                     }
                 }
             }
+        }
         }
     }
 

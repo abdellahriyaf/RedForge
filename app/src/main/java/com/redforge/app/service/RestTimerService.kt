@@ -127,7 +127,12 @@ class RestTimerService : Service() {
             val settings = SettingsDataStore(applicationContext).settingsFlow.first()
             if (settings.timerVibrationEnabled) vibrateOnFinish()
             if (settings.timerSoundEnabled) playFinishSound()
-            stopSelfCleanly()
+
+            // Keep the service alive while the completion feedback plays.
+            // Otherwise onDestroy() releases the ToneGenerator and cancels
+            // the delayed tones, leaving only the first beep audible.
+            val feedbackDuration = if (settings.timerSoundEnabled) 1800L else 0L
+            mainHandler.postDelayed({ stopSelfCleanly() }, feedbackDuration)
         }
     }
 

@@ -8,6 +8,7 @@ on:
       - v0.6.8
       - v0.6.9
       - v0.6.9-prelaunch-icon
+      - v0.6.10
   pull_request:
     branches:
       - main

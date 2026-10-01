@@ -35,7 +35,7 @@ class HistoryViewModel(
             workoutRepository.observeAllSets()
         ) { sessions, allSets ->
             sessions
-                .filter { it.completed }
+                .filter { it.completed || it.abandoned }
                 .map { session ->
                     val sets = allSets.filter { it.workoutSessionId == session.id }
                     HistorySessionUi(
@@ -76,7 +76,7 @@ class HistoryDetailViewModel(
 
     private suspend fun load() {
         val session = workoutRepository.getSession(sessionId)
-        if (session == null || !session.completed) {
+        if (session == null || (!session.completed && !session.abandoned)) {
             _uiState.value = UiState(
                 loading = false,
                 error = "That workout could not be found."

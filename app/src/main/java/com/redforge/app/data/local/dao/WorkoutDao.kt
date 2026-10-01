@@ -13,11 +13,30 @@ interface WorkoutDao {
      * was killed mid-workout, this is how we find it again on next launch
      * and resume exactly where the user left off.
      */
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE completed = 0 AND abandoned = 0
+          AND date(startedAt / 1000, 'unixepoch', 'localtime') = date('now', 'localtime')
+        ORDER BY startedAt DESC LIMIT 1
+    """)
     suspend fun getInProgressSession(): WorkoutSession?
 
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE completed = 0 AND abandoned = 0
+          AND date(startedAt / 1000, 'unixepoch', 'localtime') = date('now', 'localtime')
+        ORDER BY startedAt DESC LIMIT 1
+    """)
     fun observeInProgressSession(): Flow<WorkoutSession?>
+
+    /** Close yesterday's unfinished sessions without deleting their set entries. */
+    @Query("""
+        UPDATE workout_sessions
+        SET abandoned = 1, endedAt = COALESCE(endedAt, :endedAt)
+        WHERE completed = 0 AND abandoned = 0
+          AND date(startedAt / 1000, 'unixepoch', 'localtime') < date('now', 'localtime')
+    """)
+    suspend fun archiveExpiredSessions(endedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT * FROM workout_sessions ORDER BY startedAt DESC")
     fun observeAllSessions(): Flow<List<WorkoutSession>>

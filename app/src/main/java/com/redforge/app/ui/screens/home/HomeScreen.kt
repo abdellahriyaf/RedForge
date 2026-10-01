@@ -216,8 +216,8 @@ private fun WorkoutHeroCard(
             if (inProgress) {
                 Button(
                     onClick = onStartOrResume,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = MaterialTheme.colorScheme.onPrimary),
+                    modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFFFF3B30), ForgeRed, ForgeRedDark)))
                 ) { Text("Resume workout", fontWeight = FontWeight.Bold) }
                 TextButton(
                     onClick = onResetWorkout,
@@ -227,8 +227,8 @@ private fun WorkoutHeroCard(
                 Button(
                     onClick = onStartOrResume,
                     enabled = canStart,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = ForgeRed),
-                    modifier = Modifier.fillMaxWidth().height(52.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = Color.White),
+                    modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(Brush.linearGradient(listOf(Color(0xFFFF3B30), ForgeRed, ForgeRedDark)))
                 ) {
                     Text(
                         when {

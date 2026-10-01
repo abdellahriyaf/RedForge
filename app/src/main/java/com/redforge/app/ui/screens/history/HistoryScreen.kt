@@ -38,15 +38,15 @@ fun HistoryScreen(
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 16.dp)) {
         ForgeSectionHeader(
             "History",
-            "Every completed session, ready to review and correct"
+            "Completed and interrupted sessions, saved for review"
         )
         Spacer(Modifier.height(8.dp))
 
         if (sessions.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 EmberEmptyState(
-                    title = "No completed workouts yet",
-                    message = "Finish your first training session and RedForge will keep the record here."
+                    title = "No workout history yet",
+                    message = "Completed workouts and auto-saved partial sessions will appear here."
                 )
             }
         } else {
@@ -97,6 +97,14 @@ private fun HistoryCard(
             Icon(
                 Icons.Filled.KeyboardArrowRight,
                 contentDescription = "Open workout"
+            )
+        }
+        if (item.session.abandoned) {
+            Text(
+                "PARTIAL WORKOUT · AUTO-SAVED",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
         Spacer(Modifier.height(10.dp))
