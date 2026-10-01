@@ -21,6 +21,8 @@ data class Exercise(
     val referenceLink: String? = null,
     val notes: String = "",
     val isCustom: Boolean = true,
+    val isArchived: Boolean = false,
+    val seedKey: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
 
     // v0.6 library metadata
