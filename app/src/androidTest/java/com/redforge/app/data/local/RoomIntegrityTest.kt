@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.flow.first
 import com.redforge.app.data.local.db.RedForgeDatabase
 import com.redforge.app.data.local.entities.Exercise
 import com.redforge.app.data.local.entities.SetEntry
@@ -144,6 +145,19 @@ class RoomIntegrityTest {
             )
         )
         assertEquals(1, repository.getSetsOnce(sessionId).size)
+    }
+
+    @Test
+    fun activatingSplitLeavesExactlyOneActiveSplit() {
+        val firstId = db.splitDao().upsertSplit(Split(name = "First", isActive = true))
+        val secondId = db.splitDao().upsertSplit(Split(name = "Second"))
+
+        val repository = com.redforge.app.data.repository.SplitRepository(db.splitDao())
+        assertTrue(repository.setActiveSplit(secondId))
+
+        assertEquals(false, db.splitDao().getSplit(firstId)?.isActive)
+        assertEquals(true, db.splitDao().getSplit(secondId)?.isActive)
+        assertEquals(1, db.splitDao().observeAllSplits().first().count { it.isActive })
     }
 
     @Test
