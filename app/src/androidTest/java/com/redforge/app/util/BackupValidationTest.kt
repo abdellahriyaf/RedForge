@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,7 +23,7 @@ class BackupValidationTest {
         get() = ApplicationProvider.getApplicationContext()
 
     @Test
-    fun validBackupEnvelopeIsAccepted() {
+    fun validBackupEnvelopeIsAccepted() = runBlocking {
         val uri = writeArchive(
             listOf(
                 "redforge_backup_marker.txt" to
@@ -36,7 +37,7 @@ class BackupValidationTest {
 
 
     @Test
-    fun exportAndImportRoundTripPreservesDatabaseData() {
+    fun exportAndImportRoundTripPreservesDatabaseData() = runBlocking {
         RedForgeDatabase.closeInstance()
         context.deleteDatabase("redforge.db")
 
@@ -65,7 +66,7 @@ class BackupValidationTest {
     }
 
     @Test
-    fun duplicateEntriesAreRejected() {
+    fun duplicateEntriesAreRejected() = runBlocking {
         val file = File(context.cacheDir, "share/duplicate_backup.zip").apply { parentFile?.mkdirs() }
         ZipOutputStream(FileOutputStream(file)).use { zip ->
             zip.putNextEntry(ZipEntry("redforge_backup_marker.txt"))
@@ -92,7 +93,7 @@ class BackupValidationTest {
     }
 
     @Test
-    fun pathTraversalEntriesAreRejected() {
+    fun pathTraversalEntriesAreRejected() = runBlocking {
         val uri = writeArchive(
             listOf(
                 "redforge_backup_marker.txt" to
