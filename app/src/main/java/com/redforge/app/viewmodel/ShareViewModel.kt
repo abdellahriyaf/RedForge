@@ -38,7 +38,7 @@ class ShareViewModel(
             val (from, to) = rangeFor(scope)
             val sessions = workoutRepository
                 .getSessionsBetween(from, to)
-                .filter { it.completed }
+                .filter { it.status == WorkoutSessionStatus.COMPLETED }
 
             var totalSets = 0
             var totalVolume = 0.0
