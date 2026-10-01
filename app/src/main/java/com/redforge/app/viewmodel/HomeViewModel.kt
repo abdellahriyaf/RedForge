@@ -12,7 +12,9 @@ import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
 import com.redforge.app.domain.schedule.SplitScheduler
 import com.redforge.app.domain.streak.StreakCalculator
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -67,6 +69,11 @@ class HomeViewModel(
         val todaySkipped = activeSplit != null &&
             settings.skippedSplitId == activeSplit.id &&
             settings.skippedWorkoutDayStartMillis == todayStart
+        // Prevent a stale Room flow value from keeping Resume/Reset visible after midnight.
+        val effectiveInProgress = inProgress?.takeIf {
+            !it.abandoned && isSameCalendarDay(it.startedAt, today)
+        }
+
         val streak = StreakCalculator.compute(
             sessions = allSessions,
             nowMillis = today,
@@ -93,7 +100,7 @@ class HomeViewModel(
         HomeUiState(
             activeSplit = activeSplit,
             nextDay = planned,
-            inProgressSession = inProgress,
+            inProgressSession = effectiveInProgress,
             todayCompleted = todayCompleted,
             currentStreak = if (todaySkipped) 0 else streak.current,
             longestStreak = streak.longest,
@@ -108,8 +115,13 @@ class HomeViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 
     init {
-        // Preserve yesterday's logged sets as partial history rather than leaving Resume/Reset active.
-        viewModelScope.launch { workoutRepository.archiveExpiredSessions() }
+        // Archive expired sessions even if the app stays open overnight.
+        viewModelScope.launch {
+            while (isActive) {
+                workoutRepository.archiveExpiredSessions()
+                delay(60_000)
+            }
+        }
         viewModelScope.launch {
             uiState.filter { !it.loading }.collect { state ->
                 val milestone = STREAK_MILESTONES.lastOrNull {
