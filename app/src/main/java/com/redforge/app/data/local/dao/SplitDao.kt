@@ -19,7 +19,7 @@ interface SplitDao {
     suspend fun getSplit(id: Long): Split?
 
     @Upsert
-    suspend fun upsertSplit(split: Split)
+    suspend fun upsertSplit(split: Split): Long
 
     @Delete
     suspend fun deleteSplit(split: Split)
@@ -41,7 +41,7 @@ interface SplitDao {
     suspend fun getDay(id: Long): SplitDay?
 
     @Upsert
-    suspend fun upsertDay(day: SplitDay)
+    suspend fun upsertDay(day: SplitDay): Long
 
     @Delete
     suspend fun deleteDay(day: SplitDay)
@@ -53,7 +53,7 @@ interface SplitDao {
     suspend fun getExercisesForDayOnce(dayId: Long): List<SplitDayExercise>
 
     @Upsert
-    suspend fun upsertDayExercise(entry: SplitDayExercise)
+    suspend fun upsertDayExercise(entry: SplitDayExercise): Long
 
     @Delete
     suspend fun deleteDayExercise(entry: SplitDayExercise)
