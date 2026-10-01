@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.redforge.app.data.datastore.SettingsDataStore
 import com.redforge.app.data.datastore.WeightUnit
 import com.redforge.app.data.local.entities.*
-import com.redforge.app.domain.time.WorkoutClock
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
