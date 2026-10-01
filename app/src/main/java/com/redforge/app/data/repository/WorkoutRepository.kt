@@ -84,3 +84,5 @@ class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>> =
         dao.observeAllSetsForExercise(exerciseId)
+
+}
