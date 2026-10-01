@@ -195,9 +195,6 @@ object DataBackupUtil {
                             throw IllegalArgumentException("Duplicate archive entry")
                         }
 
-                        if (!seenEntries.add(entry.name)) {
-                            return@use false
-                        }
 
                         when {
                             entry.name == MARKER_ENTRY -> {
@@ -321,6 +318,10 @@ object DataBackupUtil {
                             entry.name,
                             allowMarker = true
                         )
+
+                        if (!seenEntries.add(entry.name)) {
+                            throw IllegalArgumentException("Duplicate archive entry")
+                        }
 
                         when {
                             entry.name == MARKER_ENTRY -> {
