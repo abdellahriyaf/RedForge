@@ -8,6 +8,7 @@ import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
 
@@ -39,7 +40,7 @@ class ProgressViewModel(
                     .sortedByDescending { it.totalVolumeAllTime }
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .flowOn(Dispatchers.Default)\n        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private fun buildSummary(exercise: Exercise, sets: List<SetEntry>): ExerciseProgressSummary? {
         if (sets.isEmpty()) return null
@@ -51,11 +52,10 @@ class ProgressViewModel(
             StrengthFormulas.totalVolume(earlierHalf),
             StrengthFormulas.totalVolume(recentHalf.ifEmpty { earlierHalf })
         )
-        val sessionCount = sorted.map { it.workoutSessionId }.distinct().size
-        return ExerciseProgressSummary(
+        val sessionCount = sorted.asSequence().map { it.workoutSessionId }.distinct().count()\n        return ExerciseProgressSummary(
             exercise = exercise,
-            bestEstimated1RM = StrengthFormulas.displayRounded(StrengthFormulas.bestEstimated1RM(sets.filter { !it.isWarmup })),
-            totalVolumeAllTime = StrengthFormulas.displayRounded(StrengthFormulas.totalVolume(sets.filter { !it.isWarmup })),
+            bestEstimated1RM = StrengthFormulas.displayRounded(StrengthFormulas.bestEstimated1RM(workingSets)),
+            totalVolumeAllTime = StrengthFormulas.displayRounded(StrengthFormulas.totalVolume(workingSets)),
             volumeChangePercent = volumeChange,
             sessionCount = sessionCount
         )
@@ -96,7 +96,7 @@ class ExerciseProgressDetailViewModel(
                 workoutRepository.observeAllSetsForExercise(exerciseId)
             ) { allSessions, allSets ->
                 exercise to Pair(allSessions, allSets)
-            }.collect { (currentExercise, data) ->
+            }.flowOn(Dispatchers.Default).collect { (currentExercise, data) ->
                 val (allSessions, allSets) = data
                 val sessions = allSessions
                     .filter { it.status == WorkoutSessionStatus.COMPLETED }
