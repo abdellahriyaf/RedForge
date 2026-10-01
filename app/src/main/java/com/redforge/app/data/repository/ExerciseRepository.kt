@@ -13,5 +13,5 @@ class ExerciseRepository(private val dao: ExerciseDao) {
     suspend fun getAllOnce(): List<Exercise> = dao.getAllOnce()
     suspend fun save(exercise: Exercise): Long = dao.upsert(exercise)
     suspend fun saveAll(exercises: List<Exercise>) = dao.upsertAll(exercises)
-    suspend fun delete(exercise: Exercise) = dao.delete(exercise)
+    suspend fun delete(exercise: Exercise) = dao.archive(exercise.id)
 }
