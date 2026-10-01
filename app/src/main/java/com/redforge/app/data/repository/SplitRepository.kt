@@ -57,10 +57,7 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Replaces the full exercise list for a day in one shot — used by the drag-to-reorder editor. */
     suspend fun replaceDayExercises(dayId: Long, exercises: List<SplitDayExercise>) {
-        dao.clearExercisesForDay(dayId)
-        exercises.forEachIndexed { index, entry ->
-            dao.upsertDayExercise(entry.copy(splitDayId = dayId, orderIndex = index))
-        }
+        dao.replaceDayExercises(dayId, exercises)
     }
 
 }
