@@ -143,6 +143,7 @@ object DataBackupUtil {
                 zipFile
             )
         } catch (_: Exception) {
+            runCatching { zipFile.delete() }
             null
         }
     }
@@ -298,6 +299,9 @@ object DataBackupUtil {
             rollbackRoot,
             PHOTOS_ENTRY_PREFIX
         )
+        val hadCurrentDb = currentDb.isFile
+        val hadCurrentPrefs = currentPrefs.isFile
+        val hadCurrentPhotos = currentPhotos.isDirectory
 
         return try {
             stagingRoot.mkdirs()
@@ -472,19 +476,23 @@ object DataBackupUtil {
             // Best-effort rollback. The app will remain usable after a failed
             // restore because the original database/settings/photos are put back.
             try {
+                File(currentDb.path + "-wal").delete()
+                File(currentDb.path + "-shm").delete()
                 if (rollbackDb.isFile) {
-                    File(currentDb.path + "-wal").delete()
-                    File(currentDb.path + "-shm").delete()
                     if (currentDb.exists()) {
                         currentDb.delete()
                     }
                     currentDb.parentFile?.mkdirs()
                     copyFile(rollbackDb, currentDb)
+                } else if (!hadCurrentDb) {
+                    currentDb.delete()
                 }
 
                 if (rollbackPrefs.isFile) {
                     currentPrefs.parentFile?.mkdirs()
                     copyFile(rollbackPrefs, currentPrefs)
+                } else if (!hadCurrentPrefs) {
+                    currentPrefs.delete()
                 }
 
                 if (rollbackPhotos.isDirectory) {
@@ -493,6 +501,8 @@ object DataBackupUtil {
                         rollbackPhotos,
                         currentPhotos
                     )
+                } else if (!hadCurrentPhotos) {
+                    currentPhotos.deleteRecursively()
                 }
             } catch (_: Exception) {
                 // Nothing else can safely be done here.
