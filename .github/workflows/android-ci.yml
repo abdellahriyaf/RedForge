@@ -30,7 +30,10 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build debug and release APKs
-        run: ./gradlew clean assembleDebug assembleRelease --stacktrace --console=plain
+        run: ./gradlew clean assembleDebug --stacktrace --console=plain
+
+      - name: Build release APK (R8)
+        run: ./gradlew assembleRelease --stacktrace --console=plain
 
       - name: Unit tests
         run: ./gradlew test --stacktrace --console=plain
