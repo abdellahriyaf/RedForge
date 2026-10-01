@@ -18,8 +18,8 @@ interface SplitDao {
     @Query("SELECT * FROM splits WHERE id = :id")
     suspend fun getSplit(id: Long): Split?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertSplit(split: Split): Long
+    @Upsert
+    suspend fun upsertSplit(split: Split)
 
     @Delete
     suspend fun deleteSplit(split: Split)
@@ -40,8 +40,8 @@ interface SplitDao {
     @Query("SELECT * FROM split_days WHERE id = :id")
     suspend fun getDay(id: Long): SplitDay?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertDay(day: SplitDay): Long
+    @Upsert
+    suspend fun upsertDay(day: SplitDay)
 
     @Delete
     suspend fun deleteDay(day: SplitDay)
@@ -52,8 +52,8 @@ interface SplitDao {
     @Query("SELECT * FROM split_day_exercises WHERE splitDayId = :dayId ORDER BY orderIndex ASC")
     suspend fun getExercisesForDayOnce(dayId: Long): List<SplitDayExercise>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertDayExercise(entry: SplitDayExercise): Long
+    @Upsert
+    suspend fun upsertDayExercise(entry: SplitDayExercise)
 
     @Delete
     suspend fun deleteDayExercise(entry: SplitDayExercise)
