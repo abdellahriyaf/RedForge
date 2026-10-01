@@ -42,7 +42,7 @@ class RoomIntegrityTest {
 
 
     @Test
-    fun roomEnablesForeignKeysAndDatabaseIntegrityCheckPasses() {
+    fun roomEnablesForeignKeysAndDatabaseIntegrityCheckPasses() = runBlocking {
         db.openHelper.writableDatabase.query("PRAGMA foreign_keys").use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(1, cursor.getInt(0))
@@ -55,7 +55,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun splitDeletionCascadesDaysAndAssignments() {
+    fun splitDeletionCascadesDaysAndAssignments() = runBlocking {
         val splitId = db.splitDao().upsertSplit(Split(name = "Test Split"))
         val dayId = db.splitDao().upsertDay(
             SplitDay(splitId = splitId, name = "Push", dayOrder = 1)
@@ -74,7 +74,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun archivedExerciseRemainsAvailableForExistingAssignments() {
+    fun archivedExerciseRemainsAvailableForExistingAssignments() = runBlocking {
         val splitId = db.splitDao().upsertSplit(Split(name = "Test Split"))
         val dayId = db.splitDao().upsertDay(
             SplitDay(splitId = splitId, name = "Push", dayOrder = 1)
@@ -93,7 +93,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun deletingSessionCascadesItsLoggedSets() {
+    fun deletingSessionCascadesItsLoggedSets() = runBlocking {
         val exerciseId = db.exerciseDao().upsert(
             Exercise(name = "Bench", muscleGroup = "Chest")
         )
@@ -122,7 +122,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun lifecycleGuardsSetWritesAndPreservesLoggedSetsOnAbandon() {
+    fun lifecycleGuardsSetWritesAndPreservesLoggedSetsOnAbandon() = runBlocking {
         val exerciseId = db.exerciseDao().upsert(
             Exercise(name = "Bench", muscleGroup = "Chest")
         )
@@ -176,7 +176,7 @@ class RoomIntegrityTest {
     }
 
     @Test
-    fun replacingDayExercisesLeavesOneOrderedSetOfAssignments() {
+    fun replacingDayExercisesLeavesOneOrderedSetOfAssignments() = runBlocking {
         val splitId = db.splitDao().upsertSplit(Split(name = "Test Split"))
         val dayId = db.splitDao().upsertDay(
             SplitDay(splitId = splitId, name = "Push", dayOrder = 1)
