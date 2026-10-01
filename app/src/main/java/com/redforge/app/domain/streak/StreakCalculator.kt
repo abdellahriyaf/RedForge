@@ -1,6 +1,7 @@
 package com.redforge.app.domain.streak
 
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -32,7 +33,7 @@ object StreakCalculator {
         scheduleAnchorStartMillis: Long? = null,
         skippedDayStartMillis: Long? = null
     ): StreakResult {
-        val completed = sessions.filter { it.completed }.sortedBy { it.startedAt }
+        val completed = sessions.filter { it.status == WorkoutSessionStatus.COMPLETED }.sortedBy { it.startedAt }
         if (completed.isEmpty()) return StreakResult(0, 0, 0L)
 
         val uniqueDays = completed
