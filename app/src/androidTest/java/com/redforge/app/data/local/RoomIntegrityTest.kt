@@ -40,6 +40,20 @@ class RoomIntegrityTest {
         db.close()
     }
 
+
+    @Test
+    fun roomEnablesForeignKeysAndDatabaseIntegrityCheckPasses() {
+        db.openHelper.writableDatabase.query("PRAGMA foreign_keys").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals(1, cursor.getInt(0))
+        }
+
+        db.openHelper.writableDatabase.query("PRAGMA integrity_check").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("ok", cursor.getString(0))
+        }
+    }
+
     @Test
     fun splitDeletionCascadesDaysAndAssignments() {
         val splitId = db.splitDao().upsertSplit(Split(name = "Test Split"))
