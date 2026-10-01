@@ -5,12 +5,8 @@ import com.redforge.app.data.local.entities.Split
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.SplitDayExercise
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class SplitRepository(private val dao: SplitDao) {
-
-    private val activationMutex = Mutex()
 
     fun observeAllSplits(): Flow<List<Split>> = dao.observeAllSplits()
     fun observeActiveSplit(): Flow<Split?> = dao.observeActiveSplit()
@@ -24,16 +20,10 @@ class SplitRepository(private val dao: SplitDao) {
     }
 
     /** Activates [splitId] as the one-and-only active split (used for streaks + Home). */
-    suspend fun setActiveSplit(splitId: Long) {
-        activationMutex.withLock {
-            dao.clearActiveFlag()
-            dao.markActive(splitId)
-        }
-    }
+    suspend fun setActiveSplit(splitId: Long): Boolean =
+        dao.activateSplit(splitId)
 
-    suspend fun clearActiveSplit() {
-        activationMutex.withLock { dao.clearActiveFlag() }
-    }
+    suspend fun clearActiveSplit() = dao.clearActiveFlag()
 
     fun observeDays(splitId: Long): Flow<List<SplitDay>> = dao.observeDaysForSplit(splitId)
     suspend fun getDay(id: Long) = dao.getDay(id)
