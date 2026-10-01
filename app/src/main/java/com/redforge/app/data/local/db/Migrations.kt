@@ -43,14 +43,13 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS workout_sessions_new (
-                id INTEGER NOT NULL,
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 splitDayId INTEGER,
                 splitDayNameSnapshot TEXT NOT NULL,
                 startedAt INTEGER NOT NULL,
                 endedAt INTEGER,
                 status TEXT NOT NULL,
-                notes TEXT NOT NULL,
-                PRIMARY KEY(id)
+                notes TEXT NOT NULL
             )
             """.trimIndent()
         )
