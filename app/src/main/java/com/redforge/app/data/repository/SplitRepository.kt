@@ -20,11 +20,6 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Deletes a split along with every day and exercise-assignment that belongs to it — nothing orphaned. */
     suspend fun deleteSplit(split: Split) {
-        val days = dao.getDaysOnce(split.id)
-        days.forEach { day ->
-            dao.clearExercisesForDay(day.id)
-            dao.deleteDay(day)
-        }
         dao.deleteSplit(split)
     }
 
@@ -46,7 +41,6 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Deletes a day and any exercise-assignments under it — nothing orphaned. */
     suspend fun deleteDay(day: SplitDay) {
-        dao.clearExercisesForDay(day.id)
         dao.deleteDay(day)
     }
 
