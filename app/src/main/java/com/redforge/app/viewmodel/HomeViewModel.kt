@@ -81,7 +81,8 @@ class HomeViewModel(
                 settings.skippedSplitId == activeSplit?.id
             }
         )
-        // Active sessions remain resumable across midnight; do not filter by calendar day.\n        val inProgress = allSessions.firstOrNull { it.status == WorkoutSessionStatus.ACTIVE }
+        // Active sessions remain resumable across midnight; do not filter by calendar day.
+        val inProgress = allSessions.firstOrNull { it.status == WorkoutSessionStatus.ACTIVE }
         val todayCompleted = allSessions.any { session ->
             session.status == WorkoutSessionStatus.COMPLETED &&
                 session.splitDayId != null &&
