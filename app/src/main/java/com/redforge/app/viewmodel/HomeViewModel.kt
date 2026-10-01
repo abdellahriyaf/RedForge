@@ -111,7 +111,8 @@ class HomeViewModel(
             todaySkipped = todaySkipped,
             loading = false
         )
-    }\n        .flowOn(Dispatchers.Default)\n        .stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
+    }
+        .flowOn(Dispatchers.Default)\n        .stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 
     init {
         viewModelScope.launch {
