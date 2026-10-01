@@ -1,6 +1,7 @@
 package com.redforge.app.data.local.entities
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -11,7 +12,7 @@ import androidx.room.PrimaryKey
  * Multi-value fields are stored as semicolon-separated strings to keep the
  * schema simple and migration-safe.
  */
-@Entity(tableName = "exercises")
+@Entity(tableName = "exercises", indices = [Index(value = ["seedKey"], unique = true)] )
 data class Exercise(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
