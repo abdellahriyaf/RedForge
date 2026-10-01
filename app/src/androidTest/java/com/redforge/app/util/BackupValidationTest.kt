@@ -34,7 +34,7 @@ class BackupValidationTest {
 
     @Test
     fun duplicateEntriesAreRejected() {
-        val file = File(context.cacheDir, "duplicate_backup.zip")
+        val file = File(context.cacheDir, "share/duplicate_backup.zip").apply { parentFile?.mkdirs() }
         ZipOutputStream(FileOutputStream(file)).use { zip ->
             zip.putNextEntry(ZipEntry("redforge_backup_marker.txt"))
             zip.write("RedForge backup|format=1|dbVersion=5|created=test".toByteArray())
@@ -73,7 +73,7 @@ class BackupValidationTest {
     }
 
     private fun writeArchive(entries: List<Pair<String, String>>): android.net.Uri {
-        val file = File.createTempFile("redforge-backup-test-", ".zip", context.cacheDir)
+        val file = File.createTempFile("redforge-backup-test-", ".zip", File(context.cacheDir, "share").apply { mkdirs() })
         ZipOutputStream(FileOutputStream(file)).use { zip ->
             entries.forEach { (name, value) ->
                 zip.putNextEntry(ZipEntry(name))
