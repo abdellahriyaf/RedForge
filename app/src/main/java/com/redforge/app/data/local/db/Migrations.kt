@@ -33,7 +33,6 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
 /**
  * v3 -> v4: replaces the ambiguous completed boolean with an explicit
  * workout lifecycle. Existing unfinished sessions remain ACTIVE until the
@@ -83,3 +82,5 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+
+val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
