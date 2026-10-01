@@ -199,6 +199,15 @@ class ActiveWorkoutViewModel(
 
         viewModelScope.launch {
             sessionWriteMutex.withLock {
+                val freshSession = workoutRepository.getSession(session.id)
+                if (freshSession?.status != WorkoutSessionStatus.ACTIVE) {
+                    _uiState.value = _uiState.value.copy(
+                        session = freshSession,
+                        error = "This workout day has ended. Your logged sets were preserved in History."
+                    )
+                    return@withLock
+                }
+
                 val nextIndex = workoutRepository.getMaxSetIndex(session.id, exerciseId) + 1
 
                 var isPr = false
@@ -276,6 +285,15 @@ class ActiveWorkoutViewModel(
         viewModelScope.launch {
             try {
                 sessionWriteMutex.withLock {
+                    val freshSession = workoutRepository.getSession(session.id)
+                    if (freshSession?.status != WorkoutSessionStatus.ACTIVE) {
+                        _uiState.value = _uiState.value.copy(
+                            session = freshSession,
+                            isFinishing = false,
+                            error = "This workout day has ended. Your logged sets were preserved in History."
+                        )
+                        return@withLock
+                    }
                     workoutRepository.completeSession(session.id)
                 }
 
