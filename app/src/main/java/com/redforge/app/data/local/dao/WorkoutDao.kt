@@ -13,11 +13,43 @@ interface WorkoutDao {
      * was killed mid-workout, this is how we find it again on next launch
      * and resume exactly where the user left off.
      */
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
-    suspend fun getInProgressSession(): WorkoutSession?
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE status = 'ACTIVE' AND startedAt >= :todayStart
+        ORDER BY startedAt DESC LIMIT 1
+    """)
+    suspend fun getInProgressSession(todayStart: Long): WorkoutSession?
 
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE status = 'ACTIVE'
+        ORDER BY startedAt DESC LIMIT 1
+    """)
     fun observeInProgressSession(): Flow<WorkoutSession?>
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'PARTIAL', endedAt = :endedAt
+        WHERE status = 'ACTIVE' AND startedAt < :todayStart
+    """)
+    suspend fun archiveExpiredSessions(
+        todayStart: Long,
+        endedAt: Long
+    )
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'COMPLETED', endedAt = :endedAt
+        WHERE id = :id AND status = 'ACTIVE'
+    """)
+    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis())
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'ABANDONED', endedAt = :endedAt
+        WHERE id = :id AND status = 'ACTIVE'
+    """)
+    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis())
 
     @Query("SELECT * FROM workout_sessions ORDER BY startedAt DESC")
     fun observeAllSessions(): Flow<List<WorkoutSession>>
@@ -67,6 +99,9 @@ interface WorkoutDao {
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>>
 
     /** Written immediately when a set is confirmed — this single call is the data-loss guarantee. */
+    @Query("SELECT COUNT(*) FROM set_entries WHERE workoutSessionId = :sessionId")
+    suspend fun getSetCountForSession(sessionId: Long): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSet(set: SetEntry): Long
 
