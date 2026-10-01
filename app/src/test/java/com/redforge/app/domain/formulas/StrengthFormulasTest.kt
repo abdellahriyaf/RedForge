@@ -10,7 +10,7 @@ class StrengthFormulasTest {
         assertEquals(
             StrengthFormulas.epley1RM(40.0, 12),
             StrengthFormulas.epley1RM(40.0, 35),
-            absoluteTolerance = 0.0001
+            0.0001
         )
     }
 
@@ -19,7 +19,7 @@ class StrengthFormulasTest {
         assertEquals(
             StrengthFormulas.brzycki1RM(40.0, 12),
             StrengthFormulas.brzycki1RM(40.0, 35),
-            absoluteTolerance = 0.0001
+            0.0001
         )
     }
 
