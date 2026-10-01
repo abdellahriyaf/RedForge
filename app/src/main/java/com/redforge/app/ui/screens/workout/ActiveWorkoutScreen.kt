@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.redforge.app.data.datastore.WeightUnit
 import com.redforge.app.data.local.entities.SetEntry
@@ -51,6 +53,7 @@ import com.redforge.app.ui.theme.ForgeGold
 import com.redforge.app.ui.theme.ForgeHeroGradient
 import com.redforge.app.ui.theme.ForgeGreen
 import com.redforge.app.util.RestTimerController
+import com.redforge.app.util.NumericInputParser
 import com.redforge.app.viewmodel.ActiveWorkoutViewModel
 import com.redforge.app.viewmodel.PrCelebration
 import com.redforge.app.viewmodel.WorkoutExerciseBlock
@@ -390,6 +393,7 @@ private fun ExerciseBlockCard(
     var showRpeDialog by remember(block.exercise.id) { mutableStateOf(false) }
     var showWarmupRamp by remember(block.exercise.id) { mutableStateOf(false) }
     var showPlates by remember(block.exercise.id) { mutableStateOf(false) }
+    var showInputErrors by remember(block.exercise.id) { mutableStateOf(false) }
 
     ForgeCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
