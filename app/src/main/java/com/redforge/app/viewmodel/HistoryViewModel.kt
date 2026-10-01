@@ -8,6 +8,7 @@ import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
 
