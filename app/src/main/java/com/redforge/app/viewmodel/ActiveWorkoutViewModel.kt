@@ -223,7 +223,7 @@ class ActiveWorkoutViewModel(
                     }
                 }
 
-                workoutRepository.logSet(
+                val logged = workoutRepository.logSet(
                     SetEntry(
                         workoutSessionId = session.id,
                         exerciseId = exerciseId,
@@ -235,6 +235,14 @@ class ActiveWorkoutViewModel(
                         isPersonalRecord = isPr
                     )
                 )
+
+                if (!logged) {
+                    _uiState.value = _uiState.value.copy(
+                        session = workoutRepository.getSession(session.id),
+                        error = "This workout day has ended. Your logged sets were preserved in History."
+                    )
+                    return@withLock
+                }
 
                 if (!isWarmup && isLastInSupersetGroup(block.dayExercise)) {
                     _lastLoggedSetTriggersRest.value = block.restSecondsForToday
@@ -290,8 +298,16 @@ class ActiveWorkoutViewModel(
                         )
                         true
                     } else {
-                        workoutRepository.completeSession(session.id)
-                        false
+                        if (!workoutRepository.completeSession(session.id)) {
+                            _uiState.value = _uiState.value.copy(
+                                session = workoutRepository.getSession(session.id),
+                                isFinishing = false,
+                                error = "This workout day has ended. Your logged sets were preserved in History."
+                            )
+                            true
+                        } else {
+                            false
+                        }
                     }
                 }
 
