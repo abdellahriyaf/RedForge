@@ -60,6 +60,33 @@ class SplitSchedulerTest {
     }
 
     @Test
+    fun `partial and abandoned sessions do not advance the schedule`() {
+        val monday = millis(2026, Calendar.SEPTEMBER, 7)
+        val tuesday = millis(2026, Calendar.SEPTEMBER, 8)
+        val result = SplitScheduler.nextDay(
+            days = days,
+            recentSessions = listOf(
+                WorkoutSession(
+                    splitDayId = 1L,
+                    splitDayNameSnapshot = "Push",
+                    startedAt = monday,
+                    status = WorkoutSessionStatus.PARTIAL
+                ),
+                WorkoutSession(
+                    splitDayId = 2L,
+                    splitDayNameSnapshot = "Pull",
+                    startedAt = tuesday,
+                    status = WorkoutSessionStatus.ABANDONED
+                )
+            ),
+            targetTimeMillis = tuesday,
+            timeZone = zone
+        )
+
+        assertEquals("Push", result?.name)
+    }
+
+    @Test
     fun `calendar advances past rest day to the next training day`() {
         val lastPull = millis(2026, Calendar.SEPTEMBER, 7)
         val targetLegDay = millis(2026, Calendar.SEPTEMBER, 9)
