@@ -11,22 +11,21 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     fun observeInProgressSession(): Flow<WorkoutSession?> = dao.observeInProgressSession()
 
     /**
-     * Returns only today's active session. Any ACTIVE session from an earlier
-     * calendar day is archived as PARTIAL first, preserving its sets.
+     * Returns the current ACTIVE session after expiring only genuinely stale
+     * sessions. Midnight alone never ends a workout.
      */
     suspend fun getInProgressSession(
         nowMillis: Long = WorkoutClock.nowMillis()
     ): WorkoutSession? {
-        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
-        dao.archiveExpiredSessions(todayStart, nowMillis)
-        return dao.getInProgressSession(todayStart)
+        archiveExpiredSessions(nowMillis)
+        return dao.getInProgressSession()
     }
 
     suspend fun archiveExpiredSessions(
         nowMillis: Long = WorkoutClock.nowMillis()
     ) {
         dao.archiveExpiredSessions(
-            WorkoutClock.startOfDayMillis(nowMillis),
+            nowMillis - WorkoutClock.ACTIVE_SESSION_TIMEOUT_MILLIS,
             nowMillis
         )
     }
@@ -40,9 +39,8 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         dao.upsertSession(WorkoutSession(splitDayId = splitDayId, splitDayNameSnapshot = splitDayName))
 
     suspend fun completeSession(id: Long, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
-        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
-        dao.archiveExpiredSessions(todayStart, nowMillis)
-        return dao.completeSession(id, todayStart, nowMillis) == 1
+        archiveExpiredSessions(nowMillis)
+        return dao.completeSession(id, nowMillis) == 1
     }
 
     /**
@@ -51,9 +49,8 @@ class WorkoutRepository(private val dao: WorkoutDao) {
      * is made atomically against the current lifecycle state.
      */
     suspend fun abandonSession(session: WorkoutSession, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
-        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
-        dao.archiveExpiredSessions(todayStart, nowMillis)
-        return dao.abandonActiveSession(session.id, todayStart, nowMillis)
+        archiveExpiredSessions(nowMillis)
+        return dao.abandonActiveSession(session.id, nowMillis)
     }
 
     suspend fun deleteSession(session: WorkoutSession) = dao.deleteSessionAndSets(session)
@@ -63,12 +60,11 @@ class WorkoutRepository(private val dao: WorkoutDao) {
 
     /**
      * Writes one set only while the session is ACTIVE, atomically with its
-     * set-index allocation.
+     * set-index allocation. Crossing midnight is allowed.
      */
     suspend fun logSet(set: SetEntry, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
-        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
-        dao.archiveExpiredSessions(todayStart, nowMillis)
-        return dao.logSetIfActive(set, todayStart)
+        archiveExpiredSessions(nowMillis)
+        return dao.logSetIfActive(set)
     }
 
     suspend fun updateSet(set: SetEntry) = dao.updateSet(set)
@@ -88,4 +84,3 @@ class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>> =
         dao.observeAllSetsForExercise(exerciseId)
-}
