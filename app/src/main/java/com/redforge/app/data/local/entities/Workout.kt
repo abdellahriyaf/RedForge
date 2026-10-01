@@ -40,7 +40,7 @@ data class WorkoutSession(
     ForeignKey(entity = WorkoutSession::class, parentColumns = ["id"], childColumns = ["workoutSessionId"], onDelete = ForeignKey.CASCADE),
     ForeignKey(entity = Exercise::class, parentColumns = ["id"], childColumns = ["exerciseId"], onDelete = ForeignKey.RESTRICT)
 ], indices = [
-    Index("workoutSessionId"), Index("exerciseId"), Index(value = ["workoutSessionId", "exerciseId", "setIndex"], unique = true)
+    Index("workoutSessionId"), Index("exerciseId") , Index(value = ["workoutSessionId", "exerciseId", "setIndex"])
 ])
 data class SetEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
