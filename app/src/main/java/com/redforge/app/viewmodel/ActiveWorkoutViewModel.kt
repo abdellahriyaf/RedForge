@@ -10,6 +10,7 @@ import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
 import com.redforge.app.domain.schedule.SplitScheduler
+import com.redforge.app.domain.time.WorkoutClock
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -98,12 +99,7 @@ class ActiveWorkoutViewModel(
             }
 
             val allSessions = workoutRepository.observeAllSessions().first()
-            val todayStart = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.HOUR_OF_DAY, 0)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                set(java.util.Calendar.MILLISECOND, 0)
-            }.timeInMillis
+            val todayStart = WorkoutClock.startOfDayMillis()
             val completedToday = allSessions.any { session ->
                 session.status == WorkoutSessionStatus.COMPLETED &&
                     session.splitDayId != null &&
