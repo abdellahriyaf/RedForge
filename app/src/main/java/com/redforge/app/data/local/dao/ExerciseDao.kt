@@ -22,7 +22,7 @@ interface ExerciseDao {
     suspend fun getByName(name: String): Exercise?
 
     @Upsert
-    suspend fun upsert(exercise: Exercise)
+    suspend fun upsert(exercise: Exercise): Long
 
     @Upsert
     suspend fun upsertAll(exercises: List<Exercise>)
