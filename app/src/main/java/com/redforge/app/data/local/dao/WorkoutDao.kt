@@ -3,15 +3,15 @@ package com.redforge.app.data.local.dao
 import androidx.room.*
 import com.redforge.app.data.local.entities.SetEntry
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkoutDao {
 
     /**
-     * There should only ever be zero or one of these. If the app process
-     * was killed mid-workout, this is how we find it again on next launch
-     * and resume exactly where the user left off.
+     * Returns only an ACTIVE session from the requested calendar day.
+     * Older ACTIVE sessions are archived by the repository before this query.
      */
     @Query("""
         SELECT * FROM workout_sessions
@@ -20,6 +20,10 @@ interface WorkoutDao {
     """)
     suspend fun getInProgressSession(todayStart: Long): WorkoutSession?
 
+    /**
+     * Legacy reactive observer retained for callers that need the raw ACTIVE stream.
+     * Callers must apply the calendar-day rule before presenting it as resumable.
+     */
     @Query("""
         SELECT * FROM workout_sessions
         WHERE status = 'ACTIVE'
@@ -35,21 +39,53 @@ interface WorkoutDao {
     suspend fun archiveExpiredSessions(
         todayStart: Long,
         endedAt: Long
-    )
+    ): Int
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'COMPLETED', endedAt = :endedAt
         WHERE id = :id AND status = 'ACTIVE'
     """)
-    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis())
+    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
 
     @Query("""
         UPDATE workout_sessions
         SET status = 'ABANDONED', endedAt = :endedAt
         WHERE id = :id AND status = 'ACTIVE'
     """)
-    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis())
+    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
+
+    /**
+     * Atomically verifies that a session is still ACTIVE and then either removes
+     * an empty session or preserves its logged sets as ABANDONED history.
+     */
+    @Transaction
+    suspend fun abandonActiveSession(id: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
+        val session = getSession(id) ?: return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+
+        if (getSetCountForSession(id) == 0) {
+            deleteSessionAndSets(session)
+        } else {
+            if (abandonSession(id, endedAt) != 1) return false
+        }
+        return true
+    }
+
+    /**
+     * Atomically verifies the session lifecycle and writes the set.
+     * This prevents midnight archival from occurring between an ACTIVE check
+     * and the actual set insert.
+     */
+    @Transaction
+    suspend fun logSetIfActive(set: SetEntry): Boolean {
+        val session = getSession(set.workoutSessionId) ?: return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+
+        val nextIndex = getMaxSetIndex(set.workoutSessionId, set.exerciseId) + 1
+        upsertSet(set.copy(setIndex = nextIndex))
+        return true
+    }
 
     @Query("SELECT * FROM workout_sessions ORDER BY startedAt DESC")
     fun observeAllSessions(): Flow<List<WorkoutSession>>
@@ -62,7 +98,6 @@ interface WorkoutDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSession(session: WorkoutSession): Long
-
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
@@ -96,7 +131,6 @@ interface WorkoutDao {
     @Query("SELECT * FROM set_entries WHERE exerciseId = :exerciseId ORDER BY loggedAt DESC")
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>>
 
-    /** Written immediately when a set is confirmed — this single call is the data-loss guarantee. */
     @Query("SELECT COUNT(*) FROM set_entries WHERE workoutSessionId = :sessionId")
     suspend fun getSetCountForSession(sessionId: Long): Int
 
