@@ -27,6 +27,24 @@ class WorkoutClockTest {
         assertFalse(WorkoutClock.isSameCalendarDay(beforeMidnight, afterMidnight, zone))
     }
 
+    @Test
+    fun `active session remains valid across midnight`() {
+        val beforeMidnight = millis(2026, Calendar.SEPTEMBER, 20, 23) + 50 * 60 * 1000L
+        val afterMidnight = millis(2026, Calendar.SEPTEMBER, 21, 1)
+
+        assertFalse(WorkoutClock.isActiveSessionExpired(beforeMidnight, afterMidnight))
+    }
+
+    @Test
+    fun `active session expires only after inactivity timeout`() {
+        val started = millis(2026, Calendar.SEPTEMBER, 20, 8)
+        val justBeforeExpiry = started + WorkoutClock.ACTIVE_SESSION_TIMEOUT_MILLIS - 1
+        val atExpiry = started + WorkoutClock.ACTIVE_SESSION_TIMEOUT_MILLIS
+
+        assertFalse(WorkoutClock.isActiveSessionExpired(started, justBeforeExpiry))
+        assertTrue(WorkoutClock.isActiveSessionExpired(started, atExpiry))
+    }
+
     private fun millis(year: Int, month: Int, day: Int, hour: Int): Long =
         Calendar.getInstance(zone).apply {
             clear()
