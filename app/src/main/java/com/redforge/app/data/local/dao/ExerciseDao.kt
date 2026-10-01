@@ -6,10 +6,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ExerciseDao {
-    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    @Query("SELECT * FROM exercises WHERE isArchived = 0 ORDER BY name ASC")
     fun observeAll(): Flow<List<Exercise>>
 
-    @Query("SELECT * FROM exercises WHERE muscleGroup = :muscleGroup ORDER BY name ASC")
+    @Query("SELECT * FROM exercises WHERE muscleGroup = :muscleGroup AND isArchived = 0 ORDER BY name ASC")
     fun observeByMuscleGroup(muscleGroup: String): Flow<List<Exercise>>
 
     @Query("SELECT * FROM exercises WHERE id = :id")
@@ -33,6 +33,6 @@ interface ExerciseDao {
     @Query("SELECT COUNT(*) FROM exercises")
     suspend fun count(): Int
 
-    @Query("SELECT * FROM exercises ORDER BY name ASC")
+    @Query("SELECT * FROM exercises WHERE isArchived = 0 ORDER BY name ASC")
     suspend fun getAllOnce(): List<Exercise>
 }
