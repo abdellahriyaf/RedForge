@@ -1,6 +1,7 @@
 package com.redforge.app.data.local.entities
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
@@ -14,7 +15,10 @@ import androidx.room.PrimaryKey
  */
 @Entity(
     tableName = "workout_sessions",
-    indices = [Index(value = ["status", "startedAt"])]
+    foreignKeys = [
+        ForeignKey(entity = SplitDay::class, parentColumns = ["id"], childColumns = ["splitDayId"], onDelete = ForeignKey.SET_NULL)
+    ],
+    indices = [Index(value = ["status", "startedAt"]), Index("splitDayId")]
 )
 data class WorkoutSession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -32,7 +36,12 @@ data class WorkoutSession(
  * the core guarantee behind "if the app is killed mid-workout, nothing is
  * lost". Re-opening the active session just re-queries these rows.
  */
-@Entity(tableName = "set_entries")
+@Entity(tableName = "set_entries", foreignKeys = [
+    ForeignKey(entity = WorkoutSession::class, parentColumns = ["id"], childColumns = ["workoutSessionId"], onDelete = ForeignKey.CASCADE),
+    ForeignKey(entity = Exercise::class, parentColumns = ["id"], childColumns = ["exerciseId"], onDelete = ForeignKey.RESTRICT)
+], indices = [
+    Index("workoutSessionId"), Index("exerciseId"), Index(value = ["workoutSessionId", "exerciseId", "setIndex"], unique = true)
+])
 data class SetEntry(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val workoutSessionId: Long,
