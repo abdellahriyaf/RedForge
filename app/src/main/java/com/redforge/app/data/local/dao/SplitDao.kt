@@ -24,12 +24,21 @@ interface SplitDao {
     @Delete
     suspend fun deleteSplit(split: Split)
 
-    /** Clears the active flag on every split — call before setting a new active one. */
     @Query("UPDATE splits SET isActive = 0")
     suspend fun clearActiveFlag()
 
     @Query("UPDATE splits SET isActive = 1, updatedAt = :now WHERE id = :splitId")
-    suspend fun markActive(splitId: Long, now: Long = System.currentTimeMillis())
+    suspend fun markActive(splitId: Long, now: Long = System.currentTimeMillis()): Int
+
+    /**
+     * Activation is one database transaction so observers can never see two
+     * active splits or an activation half-applied between the two writes.
+     */
+    @Transaction
+    suspend fun activateSplit(splitId: Long, now: Long = System.currentTimeMillis()): Boolean {
+        clearActiveFlag()
+        return markActive(splitId, now) == 1
+    }
 
     @Query("SELECT * FROM split_days WHERE splitId = :splitId ORDER BY dayOrder ASC")
     fun observeDaysForSplit(splitId: Long): Flow<List<SplitDay>>
