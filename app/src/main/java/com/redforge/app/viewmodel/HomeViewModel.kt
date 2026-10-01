@@ -13,6 +13,7 @@ import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
 import com.redforge.app.domain.schedule.SplitScheduler
 import com.redforge.app.domain.streak.StreakCalculator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.isActive
@@ -80,10 +81,7 @@ class HomeViewModel(
                 settings.skippedSplitId == activeSplit?.id
             }
         )
-        val inProgress = allSessions.firstOrNull { session ->
-            session.status == WorkoutSessionStatus.ACTIVE &&
-                WorkoutClock.isSameCalendarDay(session.startedAt, today)
-        }
+        // Active sessions remain resumable across midnight; do not filter by calendar day.\n        val inProgress = allSessions.firstOrNull { it.status == WorkoutSessionStatus.ACTIVE }
         val todayCompleted = allSessions.any { session ->
             session.status == WorkoutSessionStatus.COMPLETED &&
                 session.splitDayId != null &&
@@ -112,7 +110,7 @@ class HomeViewModel(
             todaySkipped = todaySkipped,
             loading = false
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
+    }\n        .flowOn(Dispatchers.Default)\n        .stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 
     init {
         viewModelScope.launch {
