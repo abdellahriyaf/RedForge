@@ -1,6 +1,7 @@
 package com.redforge.app.data.local.entities
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -11,7 +12,10 @@ import androidx.room.PrimaryKey
  * an [WorkoutSessionStatus.ACTIVE] session from the current calendar day.
  * Expired unfinished sessions are converted to PARTIAL and remain in history.
  */
-@Entity(tableName = "workout_sessions")
+@Entity(
+    tableName = "workout_sessions",
+    indices = [Index(value = ["status", "startedAt"])]
+)
 data class WorkoutSession(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val splitDayId: Long?, // null for a freeform/off-split workout
