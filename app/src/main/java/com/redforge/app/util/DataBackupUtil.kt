@@ -36,6 +36,7 @@ object DataBackupUtil {
     private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 250L * 1024L * 1024L
 
     fun exportBackup(context: Context): Uri? {
+        var zipFile: File? = null
         return try {
             val db = RedForgeDatabase.getInstance(context)
 
@@ -62,7 +63,7 @@ object DataBackupUtil {
                 mkdirs()
             }
 
-            val zipFile = File(
+            zipFile = File(
                 exportDir,
                 "redforge_backup_$timestamp.zip"
             )
@@ -84,7 +85,7 @@ object DataBackupUtil {
                 validateSQLiteDatabase(snapshotFile, DATABASE_VERSION)
 
                 ZipOutputStream(
-                    FileOutputStream(zipFile)
+                    FileOutputStream(requireNotNull(zipFile))
                 ).use { zip ->
                     writeTextEntry(
                         zip,
@@ -140,10 +141,10 @@ object DataBackupUtil {
             FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
-                zipFile
+                requireNotNull(zipFile)
             )
         } catch (_: Exception) {
-            runCatching { zipFile.delete() }
+            runCatching { zipFile?.delete() }
             null
         }
     }
