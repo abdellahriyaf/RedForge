@@ -22,6 +22,13 @@ interface WorkoutDao {
     suspend fun getInProgressSession(): WorkoutSession?
 
     @Query("""
+        SELECT * FROM workout_sessions
+        WHERE status = 'ACTIVE'
+        ORDER BY startedAt DESC LIMIT 1
+    """)
+    fun observeInProgressSession(): Flow<WorkoutSession?>
+
+    @Query("""
         SELECT ws.id FROM workout_sessions ws
         WHERE ws.status = 'ACTIVE'
           AND MAX(
