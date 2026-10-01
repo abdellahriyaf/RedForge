@@ -39,16 +39,22 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun startSession(splitDayId: Long?, splitDayName: String): Long =
         dao.upsertSession(WorkoutSession(splitDayId = splitDayId, splitDayNameSnapshot = splitDayName))
 
-    suspend fun completeSession(id: Long): Boolean =
-        dao.completeSession(id) == 1
+    suspend fun completeSession(id: Long, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
+        dao.archiveExpiredSessions(todayStart, nowMillis)
+        return dao.completeSession(id, todayStart, nowMillis) == 1
+    }
 
     /**
      * Explicit user discard never destroys logged sets. Empty sessions can be
      * removed; sessions with data become ABANDONED history. The whole decision
      * is made atomically against the current lifecycle state.
      */
-    suspend fun abandonSession(session: WorkoutSession): Boolean =
-        dao.abandonActiveSession(session.id)
+    suspend fun abandonSession(session: WorkoutSession, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
+        dao.archiveExpiredSessions(todayStart, nowMillis)
+        return dao.abandonActiveSession(session.id, todayStart, nowMillis)
+    }
 
     suspend fun deleteSession(session: WorkoutSession) = dao.deleteSessionAndSets(session)
 
@@ -59,7 +65,11 @@ class WorkoutRepository(private val dao: WorkoutDao) {
      * Writes one set only while the session is ACTIVE, atomically with its
      * set-index allocation.
      */
-    suspend fun logSet(set: SetEntry): Boolean = dao.logSetIfActive(set)
+    suspend fun logSet(set: SetEntry, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
+        dao.archiveExpiredSessions(todayStart, nowMillis)
+        return dao.logSetIfActive(set, todayStart)
+    }
 
     suspend fun updateSet(set: SetEntry) = dao.updateSet(set)
     suspend fun deleteSet(set: SetEntry) = dao.deleteSet(set)
