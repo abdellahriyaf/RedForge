@@ -97,7 +97,7 @@ interface WorkoutDao {
     suspend fun getSession(id: Long): WorkoutSession?
 
     @Upsert
-    suspend fun upsertSession(session: WorkoutSession)
+    suspend fun upsertSession(session: WorkoutSession): Long
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
@@ -135,7 +135,7 @@ interface WorkoutDao {
     suspend fun getSetCountForSession(sessionId: Long): Int
 
     @Upsert
-    suspend fun upsertSet(set: SetEntry)
+    suspend fun upsertSet(set: SetEntry): Long
 
     @Query("SELECT COALESCE(MAX(setIndex), 0) FROM set_entries WHERE workoutSessionId = :sessionId AND exerciseId = :exerciseId")
     suspend fun getMaxSetIndex(sessionId: Long, exerciseId: Long): Int
