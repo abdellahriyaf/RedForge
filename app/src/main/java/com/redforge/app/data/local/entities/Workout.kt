@@ -7,8 +7,9 @@ import androidx.room.PrimaryKey
  * One workout instance — a specific date the user trained a given split day.
  * Created the moment the user opens "Start Workout" and immediately written
  * to Room, so it exists on disk before a single set is even logged. This is
- * the anchor that lets us survive process death: on relaunch we just look
- * for a session with [completed] == false and resume it.
+ * the anchor that lets us survive process death: on relaunch we resume only
+ * an [WorkoutSessionStatus.ACTIVE] session from the current calendar day.
+ * Expired unfinished sessions are converted to PARTIAL and remain in history.
  */
 @Entity(tableName = "workout_sessions")
 data class WorkoutSession(
@@ -17,7 +18,7 @@ data class WorkoutSession(
     val splitDayNameSnapshot: String, // captured at start time so history reads correctly even if the split is edited later
     val startedAt: Long = System.currentTimeMillis(),
     val endedAt: Long? = null,
-    val completed: Boolean = false,
+    val status: WorkoutSessionStatus = WorkoutSessionStatus.ACTIVE,
     val notes: String = ""
 )
 
