@@ -26,6 +26,7 @@ import java.util.zip.ZipOutputStream
 object DataBackupUtil {
 
     private const val BACKUP_FORMAT_VERSION = 1
+    private const val DATABASE_VERSION = 5
     private const val DB_ENTRY = "redforge.db"
     private const val PREFS_ENTRY = "redforge_settings.preferences_pb"
     private const val PHOTOS_ENTRY_PREFIX = "progress_photos/"
@@ -80,7 +81,7 @@ object DataBackupUtil {
             try {
                 copyFile(dbFile, snapshotFile)
 
-                validateSQLiteDatabase(snapshotFile)
+                validateSQLiteDatabase(snapshotFile, DATABASE_VERSION)
 
                 ZipOutputStream(
                     FileOutputStream(zipFile)
@@ -88,7 +89,7 @@ object DataBackupUtil {
                     writeTextEntry(
                         zip,
                         MARKER_ENTRY,
-                        "RedForge backup|format=$BACKUP_FORMAT_VERSION|created=$timestamp"
+                        "RedForge backup|format=$BACKUP_FORMAT_VERSION|dbVersion=$DATABASE_VERSION|created=$timestamp"
                     )
 
                     addFileToZip(
@@ -181,6 +182,7 @@ object DataBackupUtil {
                     var total = 0L
                     var markerFound = false
                     var databaseFound = false
+                    val seenEntries = HashSet<String>()
                     var entry = zip.nextEntry
 
                     while (entry != null) {
@@ -188,6 +190,14 @@ object DataBackupUtil {
                             entry.name,
                             allowMarker = true
                         )
+
+                        if (!seenEntries.add(entry.name)) {
+                            throw IllegalArgumentException("Duplicate archive entry")
+                        }
+
+                        if (!seenEntries.add(entry.name)) {
+                            return@use false
+                        }
 
                         when {
                             entry.name == MARKER_ENTRY -> {
@@ -300,6 +310,7 @@ object DataBackupUtil {
             var markerFound = false
             var databaseFound = false
             var preferencesFound = false
+            val seenEntries = HashSet<String>()
 
             context.contentResolver.openInputStream(uri)?.use { input ->
                 ZipInputStream(input).use { zip ->
@@ -393,7 +404,7 @@ object DataBackupUtil {
                 return false
             }
 
-            validateSQLiteDatabase(stagedDb)
+            validateSQLiteDatabase(stagedDb, DATABASE_VERSION)
 
             // The restore happens only after every archive entry has been
             // extracted and validated.
@@ -672,7 +683,8 @@ object DataBackupUtil {
     }
 
     private fun validateSQLiteDatabase(
-        file: File
+        file: File,
+        expectedVersion: Int
     ) {
         FileInputStream(file).use { input ->
             val header = ByteArray(16)
@@ -704,6 +716,17 @@ object DataBackupUtil {
         }
 
         try {
+            sqlite.rawQuery(
+                "PRAGMA user_version",
+                null
+            ).use { cursor ->
+                if (!cursor.moveToFirst() || cursor.getInt(0) != expectedVersion) {
+                    throw IllegalArgumentException(
+                        "Unsupported database version"
+                    )
+                }
+            }
+
             sqlite.rawQuery(
                 "PRAGMA integrity_check",
                 null
