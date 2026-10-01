@@ -36,7 +36,7 @@ data class Split(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("splitId"), Index(value = ["splitId", "dayOrder"], unique = true)]
+    indices = [Index("splitId"), Index(value = ["splitId", "dayOrder"])]
 )
 data class SplitDay(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -72,7 +72,7 @@ data class SplitDay(
             onDelete = ForeignKey.RESTRICT
         )
     ],
-    indices = [Index("splitDayId"), Index("exerciseId"), Index(value = ["splitDayId", "orderIndex"], unique = true)]
+    indices = [Index("splitDayId"), Index("exerciseId"), Index(value = ["splitDayId", "orderIndex"])]
 )
 data class SplitDayExercise(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
