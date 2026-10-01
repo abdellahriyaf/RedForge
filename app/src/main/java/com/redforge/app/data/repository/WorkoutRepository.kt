@@ -4,11 +4,32 @@ import com.redforge.app.data.local.dao.WorkoutDao
 import com.redforge.app.data.local.entities.SetEntry
 import com.redforge.app.data.local.entities.WorkoutSession
 import kotlinx.coroutines.flow.Flow
+import com.redforge.app.domain.time.WorkoutClock
 
 class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeInProgressSession(): Flow<WorkoutSession?> = dao.observeInProgressSession()
-    suspend fun getInProgressSession(): WorkoutSession? = dao.getInProgressSession()
+
+    /**
+     * Returns only today's active session. Any ACTIVE session from an earlier
+     * calendar day is archived as PARTIAL first, preserving its sets.
+     */
+    suspend fun getInProgressSession(
+        nowMillis: Long = WorkoutClock.nowMillis()
+    ): WorkoutSession? {
+        val todayStart = WorkoutClock.startOfDayMillis(nowMillis)
+        dao.archiveExpiredSessions(todayStart, nowMillis)
+        return dao.getInProgressSession(todayStart)
+    }
+
+    suspend fun archiveExpiredSessions(
+        nowMillis: Long = WorkoutClock.nowMillis()
+    ) {
+        dao.archiveExpiredSessions(
+            WorkoutClock.startOfDayMillis(nowMillis),
+            nowMillis
+        )
+    }
 
     fun observeAllSessions(): Flow<List<WorkoutSession>> = dao.observeAllSessions()
     suspend fun getSessionsBetween(from: Long, to: Long) = dao.getSessionsBetween(from, to)
@@ -19,6 +40,19 @@ class WorkoutRepository(private val dao: WorkoutDao) {
         dao.upsertSession(WorkoutSession(splitDayId = splitDayId, splitDayNameSnapshot = splitDayName))
 
     suspend fun completeSession(id: Long) = dao.completeSession(id)
+
+    /**
+     * Explicit user discard never destroys logged sets. Empty sessions can be
+     * removed; sessions with data become ABANDONED history.
+     */
+    suspend fun abandonSession(session: WorkoutSession) {
+        if (dao.getSetCountForSession(session.id) == 0) {
+            dao.deleteSessionAndSets(session)
+        } else {
+            dao.abandonSession(session.id)
+        }
+    }
+
     suspend fun deleteSession(session: WorkoutSession) = dao.deleteSessionAndSets(session)
 
     fun observeSets(sessionId: Long): Flow<List<SetEntry>> = dao.observeSetsForSession(sessionId)
