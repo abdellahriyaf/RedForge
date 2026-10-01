@@ -42,6 +42,13 @@ android {
         compose = true
     }
 
+    // Export Room schemas so every database version has a reproducible,
+    // version-controlled migration contract.
+    //noinspection UnstableApiUsage
+    ksp {
+        arg("room.schemaLocation", "$projectDir/schemas")
+    }
+
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
@@ -87,4 +94,5 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.room:room-testing:2.6.1")
 }
