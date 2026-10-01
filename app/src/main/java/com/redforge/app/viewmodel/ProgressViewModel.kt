@@ -98,7 +98,7 @@ class ExerciseProgressDetailViewModel(
             }.collect { (currentExercise, data) ->
                 val (allSessions, allSets) = data
                 val sessions = allSessions
-                    .filter { it.completed }
+                    .filter { it.status == WorkoutSessionStatus.COMPLETED }
                     .associateBy { it.id }
 
                 val sets = allSets
