@@ -1,0 +1,72 @@
+name: RedForge CI Autopilot Bridge
+
+on:
+  workflow_run:
+    workflows: ["Android CI"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+
+concurrency:
+  group: redforge-ci-autopilot-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: Report CI result
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report failed CI
+        if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          LOG_FILE="${RUNNER_TEMP}/failed.log"
+          gh run view "$RUN_ID" --repo "$REPO" --log-failed > "$LOG_FILE" || true
+          {
+            echo "## CI failure detected"
+            echo
+            echo "**Branch:** `$BRANCH`"
+            echo "**Commit:** `$SHA`"
+            echo "**Run:** $RUN_URL"
+            echo
+            echo "The Android CI workflow failed. This issue is the machine-readable handoff for the RedForge fix loop."
+            echo
+            echo "### Failed-job log"
+            echo
+            echo '~~~text'
+            tail -c 50000 "$LOG_FILE"
+            echo
+            echo '~~~'
+          } > "${RUNNER_TEMP}/issue.md"
+
+          existing="$(gh issue list --repo "$REPO" --state open --search "RedForge CI failure in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPO" --body-file "${RUNNER_TEMP}/issue.md"
+          else
+            gh issue create --repo "$REPO"               --title "RedForge CI failure: $BRANCH @ ${SHA:0:7}"               --body-file "${RUNNER_TEMP}/issue.md"
+          fi
+
+      - name: Close stale CI failure issue after green build
+        if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --repo "$REPO" --state open --search "RedForge CI failure in:title" --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --repo "$REPO"               --body "CI is green again: $RUN_URL"
+            gh issue close "$existing" --repo "$REPO"
+          fi
