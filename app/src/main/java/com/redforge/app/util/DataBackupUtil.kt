@@ -450,7 +450,8 @@ object DataBackupUtil {
             // together with any journal/WAL sidecars that may still exist.
             // Directly deleting only the main file can leave SQLite state
             // behind and make the subsequent restore fail on emulators.
-            if (!context.deleteDatabase("redforge.db")) {
+            context.deleteDatabase("redforge.db")
+            if (currentDb.exists()) {
                 throw IllegalStateException(
                     "Could not remove the existing database"
                 )
