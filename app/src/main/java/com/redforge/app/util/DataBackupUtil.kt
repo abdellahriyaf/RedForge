@@ -27,7 +27,6 @@ object DataBackupUtil {
 
     private const val BACKUP_FORMAT_VERSION = 1
     private const val DATABASE_VERSION = 5
-    private const val MIN_SUPPORTED_DATABASE_VERSION = 1
     private const val DB_ENTRY = "redforge.db"
     private const val PREFS_ENTRY = "redforge_settings.preferences_pb"
     private const val PHOTOS_ENTRY_PREFIX = "progress_photos/"
@@ -89,7 +88,7 @@ object DataBackupUtil {
             try {
                 copyFile(dbFile, snapshotFile)
 
-                validateSQLiteDatabase(snapshotFile, MIN_SUPPORTED_DATABASE_VERSION, DATABASE_VERSION)
+                validateSQLiteDatabase(snapshotFile)
 
                 ZipOutputStream(
                     FileOutputStream(requireNotNull(zipFile))
@@ -417,7 +416,7 @@ object DataBackupUtil {
                 return false
             }
 
-            validateSQLiteDatabase(stagedDb, MIN_SUPPORTED_DATABASE_VERSION, DATABASE_VERSION)
+            validateSQLiteDatabase(stagedDb)
 
             // The restore happens only after every archive entry has been
             // extracted and validated.
@@ -702,9 +701,7 @@ object DataBackupUtil {
     }
 
     private fun validateSQLiteDatabase(
-        file: File,
-        minimumSupportedVersion: Int,
-        maximumSupportedVersion: Int
+        file: File
     ) {
         FileInputStream(file).use { input ->
             val header = ByteArray(16)
@@ -737,19 +734,12 @@ object DataBackupUtil {
 
         try {
             sqlite.rawQuery(
-                "PRAGMA user_version",
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='room_master_table'",
                 null
             ).use { cursor ->
                 if (!cursor.moveToFirst()) {
                     throw IllegalArgumentException(
-                        "Could not read database version"
-                    )
-                }
-
-                val version = cursor.getInt(0)
-                if (version !in minimumSupportedVersion..maximumSupportedVersion) {
-                    throw IllegalArgumentException(
-                        "Unsupported database version: $version"
+                        "Not a Room database"
                     )
                 }
             }
