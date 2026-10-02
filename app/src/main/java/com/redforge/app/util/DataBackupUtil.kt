@@ -49,7 +49,7 @@ object DataBackupUtil {
             // snapshot. Do not wrap the file copy in a SQL transaction: the
             // database file is the snapshot target, not the transaction target.
             db.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
+                .rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null)
                 .use { }
 
             val timestamp = SimpleDateFormat(
@@ -144,9 +144,8 @@ object DataBackupUtil {
                 "${context.packageName}.fileprovider",
                 requireNotNull(zipFile)
             )
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             runCatching { zipFile?.delete() }
-            throw e
             null
         }
     }
