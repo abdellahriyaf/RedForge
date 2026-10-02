@@ -39,6 +39,19 @@ jobs:
       - name: Build release APK (R8)
         run: ./gradlew assembleRelease --stacktrace --console=plain
 
+      - name: Verify release artifacts
+        run: |
+          set -euo pipefail
+          debug_apk="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          release_apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          test -n "$debug_apk"
+          test -n "$release_apk"
+          test -s "$debug_apk"
+          test -s "$release_apk"
+          unzip -t "$debug_apk" >/dev/null
+          unzip -t "$release_apk" >/dev/null
+          sha256sum "$debug_apk" "$release_apk"
+
       - name: Unit tests
         run: ./gradlew test --stacktrace --console=plain
 
@@ -75,7 +88,7 @@ jobs:
           if-no-files-found: error
 
   instrumented:
-    name: Instrumented database and lifecycle tests
+    name: Instrumented migration, database, and lifecycle tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
