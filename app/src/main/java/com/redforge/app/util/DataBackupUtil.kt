@@ -5,7 +5,6 @@ import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import androidx.core.content.FileProvider
-import androidx.sqlite.db.SimpleSQLiteQuery
 import com.redforge.app.data.local.db.RedForgeDatabase
 import java.io.File
 import java.io.FileInputStream
@@ -47,11 +46,16 @@ object DataBackupUtil {
             }
 
             // Flush WAL contents into the main database file before taking the
-            // snapshot. Do not wrap the file copy in a SQL transaction: the
-            // database file is the snapshot target, not the transaction target.
-            db.openHelper.writableDatabase
-                .query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)"))
-                .use { }
+            // snapshot. Use Android's native SQLiteDatabase here because the
+            // Room SupportSQLiteDatabase adapter does not expose rawQuery().
+            val liveDbFile = context.getDatabasePath("redforge.db")
+            SQLiteDatabase.openDatabase(
+                liveDbFile.absolutePath,
+                null,
+                SQLiteDatabase.OPEN_READWRITE
+            ).use { liveDb ->
+                liveDb.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { }
+            }
 
             val timestamp = SimpleDateFormat(
                 "yyyyMMdd_HHmmss",
