@@ -49,13 +49,13 @@ object DataBackupUtil {
             // owns the current connection pool. Opening a second SQLite handle
             // can leave Room's most recent writes in its WAL while the main file
             // is copied below, producing a valid but stale backup.
-            db.query("PRAGMA wal_checkpoint(TRUNCATE)").use { cursor ->
-                if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
-                    throw IllegalStateException(
-                        "Could not checkpoint the database before backup"
-                    )
+            db.openHelper.writableDatabase
+                .query("PRAGMA wal_checkpoint(TRUNCATE)")
+                .use { cursor ->
+                    if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
+                        throw IllegalStateException("Could not checkpoint the database before backup")
+                    }
                 }
-            }
 
             val timestamp = SimpleDateFormat(
                 "yyyyMMdd_HHmmss",
