@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.util.Log
-import com.redforge.app.BuildConfig
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.redforge.app.data.local.db.RedForgeDatabase
@@ -150,7 +149,7 @@ object DataBackupUtil {
         } catch (e: Exception) {
             Log.e("DataBackupUtil", "Backup export failed", e)
             runCatching { zipFile?.delete() }
-            if (BuildConfig.DEBUG) throw e
+            throw e
             null
         }
     }
