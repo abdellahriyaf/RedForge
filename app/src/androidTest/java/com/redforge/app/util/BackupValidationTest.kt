@@ -42,9 +42,18 @@ class BackupValidationTest {
         )
 
         val backupUri = DataBackupUtil.exportBackup(context)
-        assertTrue(backupUri != null)
-        assertTrue(DataBackupUtil.isValidBackup(context, backupUri!!))
-        assertTrue(DataBackupUtil.importBackup(context, backupUri))
+        assertTrue("backup export failed", backupUri != null)
+        assertTrue(
+            "exported backup failed validation",
+            DataBackupUtil.isValidBackup(context, backupUri!!)
+        )
+
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
+        assertTrue(
+            "backup import failed",
+            DataBackupUtil.importBackup(context, backupUri)
+        )
 
         RedForgeDatabase.closeInstance()
         val restored = RedForgeDatabase.getInstance(context)
