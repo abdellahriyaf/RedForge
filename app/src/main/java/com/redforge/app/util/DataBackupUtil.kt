@@ -3,7 +3,6 @@ package com.redforge.app.util
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
-import android.util.Log
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.redforge.app.data.local.db.RedForgeDatabase
@@ -49,9 +48,8 @@ object DataBackupUtil {
             // Flush WAL contents into the main database file before taking the
             // snapshot. Do not wrap the file copy in a SQL transaction: the
             // database file is the snapshot target, not the transaction target.
-            db.openHelper.writableDatabase.apply {
-                execSQL("PRAGMA busy_timeout=5000")
-            }.query("PRAGMA wal_checkpoint(TRUNCATE)")
+            db.openHelper.writableDatabase
+                .query("PRAGMA wal_checkpoint(TRUNCATE)")
                 .use { }
 
             val timestamp = SimpleDateFormat(
