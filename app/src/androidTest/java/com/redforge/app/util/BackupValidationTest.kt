@@ -11,6 +11,7 @@ import java.io.FileOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -19,29 +20,31 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class BackupValidationTest {
 
-    private val context: Context
-        get() = ApplicationProvider.getApplicationContext()
+    private lateinit var context: Context
+
+    @org.junit.Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+        RedForgeDatabase.closeInstance()
+        context.deleteDatabase("redforge.db")
+    }
+
+    @After
+    fun tearDown() {
+    }
 
     @Test
     fun validBackupEnvelopeIsAccepted() = runBlocking {
-        RedForgeDatabase.closeInstance()
-        context.deleteDatabase("redforge.db")
-
         val uri = DataBackupUtil.exportBackup(context)
 
         assertTrue(uri != null)
         assertTrue(DataBackupUtil.isValidBackup(context, uri!!))
 
-        RedForgeDatabase.closeInstance()
-        context.deleteDatabase("redforge.db")
     }
 
 
     @Test
     fun exportAndImportRoundTripPreservesDatabaseData() = runBlocking {
-        RedForgeDatabase.closeInstance()
-        context.deleteDatabase("redforge.db")
-
         val database = RedForgeDatabase.getInstance(context)
         database.exerciseDao().upsert(
             Exercise(
