@@ -5,6 +5,7 @@ import android.content.Intent
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.sqlite.db.SimpleSQLiteQuery
 import com.redforge.app.data.local.db.RedForgeDatabase
 import java.io.File
 import java.io.FileInputStream
@@ -49,7 +50,7 @@ object DataBackupUtil {
             // snapshot. Do not wrap the file copy in a SQL transaction: the
             // database file is the snapshot target, not the transaction target.
             db.openHelper.writableDatabase
-                .rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null)
+                .query(SimpleSQLiteQuery("PRAGMA wal_checkpoint(TRUNCATE)"))
                 .use { }
 
             val timestamp = SimpleDateFormat(
