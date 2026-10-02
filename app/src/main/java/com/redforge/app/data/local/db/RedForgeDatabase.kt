@@ -55,7 +55,19 @@ abstract class RedForgeDatabase : RoomDatabase() {
                         INSTANCE = database
                         seedJob?.cancel()
                         seedJob = seedScope.launch {
-                            ExerciseLibrarySeeder.ensureSeeded(database)
+                            try {
+                                ExerciseLibrarySeeder.ensureSeeded(database)
+                            } catch (e: kotlinx.coroutines.CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                // The database can be closed during restore or test teardown.
+                                // Seeding will be retried the next time the database opens.
+                                android.util.Log.w(
+                                    "RedForgeDatabase",
+                                    "Seeding interrupted",
+                                    e
+                                )
+                            }
                         }
                     }
             }
