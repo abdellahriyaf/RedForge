@@ -446,9 +446,13 @@ object DataBackupUtil {
             File(currentDb.path + "-wal").delete()
             File(currentDb.path + "-shm").delete()
 
-            if (currentDb.exists() && !currentDb.delete()) {
+            // Use Context.deleteDatabase() so Android removes the database
+            // together with any journal/WAL sidecars that may still exist.
+            // Directly deleting only the main file can leave SQLite state
+            // behind and make the subsequent restore fail on emulators.
+            if (!context.deleteDatabase("redforge.db")) {
                 throw IllegalStateException(
-                    "Could not replace the existing database"
+                    "Could not remove the existing database"
                 )
             }
 
