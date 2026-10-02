@@ -2,7 +2,7 @@ package com.redforge.app.data.local.db
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-import androidx.sqlite.db.framework.FrameworkSQLiteDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
@@ -39,7 +39,12 @@ class MigrationV4ToV5Test {
     fun migrationRepairsOrphansAndNormalizesDayOrder() {
         seedLegacyData(database)
 
-        MIGRATION_4_5.migrate(FrameworkSQLiteDatabase(database))
+        MIGRATION_4_5.migrate(
+            Class.forName("androidx.sqlite.db.framework.FrameworkSQLiteDatabase")
+                .getDeclaredConstructor(SQLiteDatabase::class.java)
+                .apply { isAccessible = true }
+                .newInstance(database) as SupportSQLiteDatabase
+        )
 
         database.rawQuery(
             "SELECT COUNT(*) FROM exercises WHERE id = 1",
