@@ -35,10 +35,11 @@ object DataBackupUtil {
     private const val MAX_ENTRY_BYTES = 100L * 1024L * 1024L
     private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 250L * 1024L * 1024L
 
-    fun exportBackup(context: Context): Uri? {
+    suspend fun exportBackup(context: Context): Uri? {
         var zipFile: File? = null
         return try {
             val db = RedForgeDatabase.getInstance(context)
+            RedForgeDatabase.awaitSeeded()
 
             if (!db.isOpen) {
                 return null
