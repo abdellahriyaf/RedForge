@@ -734,17 +734,6 @@ object DataBackupUtil {
 
         try {
             sqlite.rawQuery(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name='room_master_table'",
-                null
-            ).use { cursor ->
-                if (!cursor.moveToFirst()) {
-                    throw IllegalArgumentException(
-                        "Not a Room database"
-                    )
-                }
-            }
-
-            sqlite.rawQuery(
                 "PRAGMA integrity_check",
                 null
             ).use { cursor ->
