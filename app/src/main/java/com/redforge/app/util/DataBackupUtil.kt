@@ -145,7 +145,6 @@ object DataBackupUtil {
                 requireNotNull(zipFile)
             )
         } catch (e: Exception) {
-            Log.e("DataBackupUtil", "Backup export failed", e)
             runCatching { zipFile?.delete() }
             throw e
             null
