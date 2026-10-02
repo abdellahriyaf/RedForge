@@ -47,8 +47,9 @@ object DataBackupUtil {
             // Flush WAL contents into the main database file before taking the
             // snapshot. Do not wrap the file copy in a SQL transaction: the
             // database file is the snapshot target, not the transaction target.
-            db.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
+            db.openHelper.writableDatabase.apply {
+                execSQL("PRAGMA busy_timeout=5000")
+            }.query("PRAGMA wal_checkpoint(TRUNCATE)")
                 .use { }
 
             val timestamp = SimpleDateFormat(
