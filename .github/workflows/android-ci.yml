@@ -52,6 +52,13 @@ jobs:
           unzip -t "$release_apk" >/dev/null
           sha256sum "$debug_apk" "$release_apk"
 
+      - name: Verify Room schema artifact
+        run: |
+          set -euo pipefail
+          schema="app/schemas/com.redforge.app.data.local.db.RedForgeDatabase/5.json"
+          test -s "$schema"
+          grep -q '"version": 5' "$schema"
+
       - name: Unit tests
         run: ./gradlew test --stacktrace --console=plain
 
