@@ -45,16 +45,16 @@ object DataBackupUtil {
                 return null
             }
 
-            // Flush WAL contents into the main database file before taking the
-            // snapshot. Use Android's native SQLiteDatabase here because the
-            // Room SupportSQLiteDatabase adapter does not expose rawQuery().
-            val liveDbFile = context.getDatabasePath("redforge.db")
-            SQLiteDatabase.openDatabase(
-                liveDbFile.absolutePath,
-                null,
-                SQLiteDatabase.OPEN_READWRITE
-            ).use { liveDb ->
-                liveDb.rawQuery("PRAGMA wal_checkpoint(TRUNCATE)", null).use { }
+            // Flush WAL contents through the same Room database handle that
+            // owns the current connection pool. Opening a second SQLite handle
+            // can leave Room's most recent writes in its WAL while the main file
+            // is copied below, producing a valid but stale backup.
+            db.query("PRAGMA wal_checkpoint(TRUNCATE)").use { cursor ->
+                if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
+                    throw IllegalStateException(
+                        "Could not checkpoint the database before backup"
+                    )
+                }
             }
 
             val timestamp = SimpleDateFormat(
