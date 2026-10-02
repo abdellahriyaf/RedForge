@@ -50,7 +50,7 @@ object DataBackupUtil {
             // can leave Room's most recent writes in its WAL while the main file
             // is copied below, producing a valid but stale backup.
             db.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
+                .query("PRAGMA wal_checkpoint(TRUNCATE)", emptyArray())
                 .use { cursor ->
                     if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
                         throw IllegalStateException("Could not checkpoint the database before backup")
