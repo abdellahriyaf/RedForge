@@ -4,11 +4,31 @@ import com.redforge.app.data.local.dao.WorkoutDao
 import com.redforge.app.data.local.entities.SetEntry
 import com.redforge.app.data.local.entities.WorkoutSession
 import kotlinx.coroutines.flow.Flow
+import com.redforge.app.domain.time.WorkoutClock
 
 class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeInProgressSession(): Flow<WorkoutSession?> = dao.observeInProgressSession()
-    suspend fun getInProgressSession(): WorkoutSession? = dao.getInProgressSession()
+
+    /**
+     * Returns the current ACTIVE session after expiring only genuinely stale
+     * sessions. Midnight alone never ends a workout.
+     */
+    suspend fun getInProgressSession(
+        nowMillis: Long = WorkoutClock.nowMillis()
+    ): WorkoutSession? {
+        archiveExpiredSessions(nowMillis)
+        return dao.getInProgressSession()
+    }
+
+    suspend fun archiveExpiredSessions(
+        nowMillis: Long = WorkoutClock.nowMillis()
+    ) {
+        dao.archiveExpiredSessions(
+            nowMillis - WorkoutClock.ACTIVE_SESSION_TIMEOUT_MILLIS,
+            nowMillis
+        )
+    }
 
     fun observeAllSessions(): Flow<List<WorkoutSession>> = dao.observeAllSessions()
     suspend fun getSessionsBetween(from: Long, to: Long) = dao.getSessionsBetween(from, to)
@@ -18,19 +38,34 @@ class WorkoutRepository(private val dao: WorkoutDao) {
     suspend fun startSession(splitDayId: Long?, splitDayName: String): Long =
         dao.upsertSession(WorkoutSession(splitDayId = splitDayId, splitDayNameSnapshot = splitDayName))
 
-    suspend fun completeSession(id: Long) = dao.completeSession(id)
+    suspend fun completeSession(id: Long, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        archiveExpiredSessions(nowMillis)
+        return dao.completeSession(id, nowMillis) == 1
+    }
+
+    /**
+     * Explicit user discard never destroys logged sets. Empty sessions can be
+     * removed; sessions with data become ABANDONED history. The whole decision
+     * is made atomically against the current lifecycle state.
+     */
+    suspend fun abandonSession(session: WorkoutSession, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        archiveExpiredSessions(nowMillis)
+        return dao.abandonActiveSession(session.id, nowMillis)
+    }
+
     suspend fun deleteSession(session: WorkoutSession) = dao.deleteSessionAndSets(session)
 
     fun observeSets(sessionId: Long): Flow<List<SetEntry>> = dao.observeSetsForSession(sessionId)
     suspend fun getSetsOnce(sessionId: Long) = dao.getSetsForSessionOnce(sessionId)
 
     /**
-     * The single most important call in the data layer: writes one set to
-     * Room synchronously with the suspend call site (a Room coroutine call
-     * commits before returning). Callers should invoke this the instant a
-     * set is confirmed — never batch sets in memory to write "later".
+     * Writes one set only while the session is ACTIVE, atomically with its
+     * set-index allocation. Crossing midnight is allowed.
      */
-    suspend fun logSet(set: SetEntry): Long = dao.upsertSet(set)
+    suspend fun logSet(set: SetEntry, nowMillis: Long = WorkoutClock.nowMillis()): Boolean {
+        archiveExpiredSessions(nowMillis)
+        return dao.logSetIfActive(set)
+    }
 
     suspend fun updateSet(set: SetEntry) = dao.updateSet(set)
     suspend fun deleteSet(set: SetEntry) = dao.deleteSet(set)
@@ -49,4 +84,5 @@ class WorkoutRepository(private val dao: WorkoutDao) {
 
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>> =
         dao.observeAllSetsForExercise(exerciseId)
+
 }

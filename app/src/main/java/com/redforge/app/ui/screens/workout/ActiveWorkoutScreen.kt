@@ -38,6 +38,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.redforge.app.data.datastore.WeightUnit
 import com.redforge.app.data.local.entities.SetEntry
@@ -51,6 +53,7 @@ import com.redforge.app.ui.theme.ForgeGold
 import com.redforge.app.ui.theme.ForgeHeroGradient
 import com.redforge.app.ui.theme.ForgeGreen
 import com.redforge.app.util.RestTimerController
+import com.redforge.app.util.NumericInputParser
 import com.redforge.app.viewmodel.ActiveWorkoutViewModel
 import com.redforge.app.viewmodel.PrCelebration
 import com.redforge.app.viewmodel.WorkoutExerciseBlock
@@ -390,6 +393,7 @@ private fun ExerciseBlockCard(
     var showRpeDialog by remember(block.exercise.id) { mutableStateOf(false) }
     var showWarmupRamp by remember(block.exercise.id) { mutableStateOf(false) }
     var showPlates by remember(block.exercise.id) { mutableStateOf(false) }
+    var showInputErrors by remember(block.exercise.id) { mutableStateOf(false) }
 
     ForgeCard(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -491,17 +495,37 @@ private fun ExerciseBlockCard(
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
                 value = weightInput,
-                onValueChange = { weightInput = it },
+                onValueChange = {
+                    weightInput = it
+                    showInputErrors = false
+                },
                 label = { Text(unitLabel(weightUnit)) },
                 singleLine = true,
+                isError = showInputErrors && NumericInputParser.parseWeight(weightInput) == null,
+                supportingText = {
+                    if (showInputErrors && NumericInputParser.parseWeight(weightInput) == null) {
+                        Text("Enter a valid weight, e.g. 82.5 or 82,5.")
+                    }
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 textStyle = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f).heightIn(min = 60.dp)
             )
             OutlinedTextField(
                 value = repsInput,
-                onValueChange = { repsInput = it },
+                onValueChange = {
+                    repsInput = it
+                    showInputErrors = false
+                },
                 label = { Text("Reps") },
                 singleLine = true,
+                isError = showInputErrors && NumericInputParser.parseReps(repsInput) == null,
+                supportingText = {
+                    if (showInputErrors && NumericInputParser.parseReps(repsInput) == null) {
+                        Text("Enter a whole number greater than 0.")
+                    }
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 textStyle = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f).heightIn(min = 60.dp)
             )
@@ -510,15 +534,20 @@ private fun ExerciseBlockCard(
         Spacer(Modifier.height(8.dp))
         ForgeButton(
             text = "Log set",
-            enabled = weightInput.toDoubleOrNull() != null && repsInput.toIntOrNull() != null,
+            enabled = weightInput.isNotBlank() && repsInput.isNotBlank(),
             onClick = {
-                val w = weightInput.toDoubleOrNull() ?: return@ForgeButton
-                val r = repsInput.toIntOrNull() ?: return@ForgeButton
+                val w = NumericInputParser.parseWeight(weightInput)
+                val r = NumericInputParser.parseReps(repsInput)
+                if (w == null || r == null) {
+                    showInputErrors = true
+                    return@ForgeButton
+                }
                 onLogSet(w, r, warmup, rpe)
                 weightInput = ""
                 repsInput = ""
                 warmup = false
                 rpe = null
+                showInputErrors = false
             },
             modifier = Modifier.fillMaxWidth()
         )

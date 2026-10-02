@@ -29,6 +29,8 @@ import androidx.compose.ui.graphics.Color
 import com.redforge.app.MainActivity
 import com.redforge.app.RedForgeApplication
 import com.redforge.app.domain.schedule.SplitScheduler
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
+import com.redforge.app.domain.time.WorkoutClock
 import com.redforge.app.domain.streak.StreakCalculator
 import java.util.Calendar
 import kotlinx.coroutines.flow.first
@@ -39,14 +41,9 @@ class RedForgeWidget : GlanceAppWidget() {
         val app = context.applicationContext as RedForgeApplication
         val activeSplit = app.splitRepository.observeActiveSplit().first()
         val sessions = app.workoutRepository.observeAllSessions().first()
-        val inProgress = app.workoutRepository.observeInProgressSession().first()
+        val inProgress = app.workoutRepository.getInProgressSession()
         val settings = app.settingsDataStore.settingsFlow.first()
-        val todayStart = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
+        val todayStart = WorkoutClock.startOfDayMillis()
         val todaySkipped = activeSplit != null &&
             settings.skippedSplitId == activeSplit.id &&
             settings.skippedWorkoutDayStartMillis == todayStart
@@ -70,7 +67,7 @@ class RedForgeWidget : GlanceAppWidget() {
         } else null
 
         val todayCompleted = sessions.any { session ->
-            if (!session.completed) return@any false
+            if (session.status != WorkoutSessionStatus.COMPLETED) return@any false
             val start = Calendar.getInstance().apply { timeInMillis = session.startedAt }
             val today = Calendar.getInstance()
             start.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&

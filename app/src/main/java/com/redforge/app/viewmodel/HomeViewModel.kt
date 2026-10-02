@@ -7,13 +7,18 @@ import com.redforge.app.data.datastore.SettingsDataStore
 import com.redforge.app.data.local.entities.Split
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
 import com.redforge.app.domain.schedule.SplitScheduler
 import com.redforge.app.domain.streak.StreakCalculator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import com.redforge.app.domain.time.WorkoutClock
 import java.util.Calendar
 
 data class HomeUiState(
@@ -45,13 +50,12 @@ class HomeViewModel(
 
     val uiState: StateFlow<HomeUiState> = combine(
         splitRepository.observeActiveSplit(),
-        workoutRepository.observeInProgressSession(),
         workoutRepository.observeAllSessions(),
         workoutRepository.observeAllSets(),
         settingsDataStore.settingsFlow
-    ) { activeSplit, inProgress, allSessions, allSets, settings ->
+    ) { activeSplit, allSessions, allSets, settings ->
         val days = activeSplit?.let { splitRepository.observeDays(it.id).first() }.orEmpty()
-        val today = System.currentTimeMillis()
+        val today = WorkoutClock.nowMillis()
         val scheduleAnchor = settings.scheduleAnchorStartMillis.takeIf {
             it != null && settings.scheduleAnchorSplitId == activeSplit?.id
         }
@@ -77,14 +81,16 @@ class HomeViewModel(
                 settings.skippedSplitId == activeSplit?.id
             }
         )
+        // Active sessions remain resumable across midnight; do not filter by calendar day.
+        val inProgress = allSessions.firstOrNull { it.status == WorkoutSessionStatus.ACTIVE }
         val todayCompleted = allSessions.any { session ->
-            session.completed &&
+            session.status == WorkoutSessionStatus.COMPLETED &&
                 session.splitDayId != null &&
                 days.any { it.id == session.splitDayId } &&
                 isSameCalendarDay(session.startedAt, today)
         }
         val weekStart = startOfWeekMillis(today)
-        val weekSessions = allSessions.filter { it.completed && it.startedAt >= weekStart && it.startedAt <= today }
+        val weekSessions = allSessions.filter { it.status == WorkoutSessionStatus.COMPLETED && it.startedAt >= weekStart && it.startedAt <= today }
         val weekSessionIds = weekSessions.map { it.id }.toSet()
         val weekSetsList = allSets.filter { it.workoutSessionId in weekSessionIds }
         val weekSets = weekSetsList.size
@@ -105,9 +111,17 @@ class HomeViewModel(
             todaySkipped = todaySkipped,
             loading = false
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 
     init {
+        viewModelScope.launch {
+            while (isActive) {
+                workoutRepository.archiveExpiredSessions()
+                delay(60_000L)
+            }
+        }
         viewModelScope.launch {
             uiState.filter { !it.loading }.collect { state ->
                 val milestone = STREAK_MILESTONES.lastOrNull {
@@ -135,25 +149,15 @@ class HomeViewModel(
 
     fun resetInProgressWorkout() {
         viewModelScope.launch {
-            uiState.value.inProgressSession?.let { workoutRepository.deleteSession(it) }
+            uiState.value.inProgressSession?.let { workoutRepository.abandonSession(it) }
         }
     }
 
     private fun isSameCalendarDay(firstMillis: Long, secondMillis: Long): Boolean {
-        val a = Calendar.getInstance().apply { timeInMillis = firstMillis }
-        val b = Calendar.getInstance().apply { timeInMillis = secondMillis }
-        return a.get(Calendar.ERA) == b.get(Calendar.ERA) &&
-            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
-            a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
+        return WorkoutClock.isSameCalendarDay(firstMillis, secondMillis)
     }
 
-    private fun startOfDayMillis(nowMillis: Long): Long = Calendar.getInstance().apply {
-        timeInMillis = nowMillis
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
+    private fun startOfDayMillis(nowMillis: Long): Long = WorkoutClock.startOfDayMillis(nowMillis)
 
     private fun startOfWeekMillis(nowMillis: Long): Long {
         val calendar = Calendar.getInstance().apply { timeInMillis = nowMillis }

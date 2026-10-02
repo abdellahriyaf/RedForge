@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.redforge.app.data.local.entities.Exercise
 import com.redforge.app.data.local.entities.SetEntry
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.ExerciseRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.*
 
@@ -38,6 +40,7 @@ class ProgressViewModel(
                     .sortedByDescending { it.totalVolumeAllTime }
             }
         }
+        .flowOn(Dispatchers.Default)
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private fun buildSummary(exercise: Exercise, sets: List<SetEntry>): ExerciseProgressSummary? {
@@ -46,15 +49,16 @@ class ProgressViewModel(
         val midpoint = sorted.size / 2
         val earlierHalf = sorted.take(maxOf(midpoint, 1))
         val recentHalf = sorted.drop(midpoint)
+        val workingSets = sets.filter { !it.isWarmup }
         val volumeChange = StrengthFormulas.percentChange(
             StrengthFormulas.totalVolume(earlierHalf),
             StrengthFormulas.totalVolume(recentHalf.ifEmpty { earlierHalf })
         )
-        val sessionCount = sorted.map { it.workoutSessionId }.distinct().size
+        val sessionCount = sorted.asSequence().map { it.workoutSessionId }.distinct().count()
         return ExerciseProgressSummary(
             exercise = exercise,
-            bestEstimated1RM = StrengthFormulas.displayRounded(StrengthFormulas.bestEstimated1RM(sets.filter { !it.isWarmup })),
-            totalVolumeAllTime = StrengthFormulas.displayRounded(StrengthFormulas.totalVolume(sets.filter { !it.isWarmup })),
+            bestEstimated1RM = StrengthFormulas.displayRounded(StrengthFormulas.bestEstimated1RM(workingSets)),
+            totalVolumeAllTime = StrengthFormulas.displayRounded(StrengthFormulas.totalVolume(workingSets)),
             volumeChangePercent = volumeChange,
             sessionCount = sessionCount
         )
@@ -95,10 +99,10 @@ class ExerciseProgressDetailViewModel(
                 workoutRepository.observeAllSetsForExercise(exerciseId)
             ) { allSessions, allSets ->
                 exercise to Pair(allSessions, allSets)
-            }.collect { (currentExercise, data) ->
+            }.flowOn(Dispatchers.Default).collect { (currentExercise, data) ->
                 val (allSessions, allSets) = data
                 val sessions = allSessions
-                    .filter { it.completed }
+                    .filter { it.status == WorkoutSessionStatus.COMPLETED }
                     .associateBy { it.id }
 
                 val sets = allSets

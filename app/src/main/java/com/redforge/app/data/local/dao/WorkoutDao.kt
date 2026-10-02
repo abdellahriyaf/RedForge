@@ -3,21 +3,105 @@ package com.redforge.app.data.local.dao
 import androidx.room.*
 import com.redforge.app.data.local.entities.SetEntry
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface WorkoutDao {
 
     /**
-     * There should only ever be zero or one of these. If the app process
-     * was killed mid-workout, this is how we find it again on next launch
-     * and resume exactly where the user left off.
+     * Returns the newest ACTIVE session. The repository first archives sessions
+     * that have been inactive for the lifecycle timeout, not sessions that
+     * merely crossed midnight.
      */
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE status = 'ACTIVE'
+        ORDER BY startedAt DESC LIMIT 1
+    """)
     suspend fun getInProgressSession(): WorkoutSession?
 
-    @Query("SELECT * FROM workout_sessions WHERE completed = 0 ORDER BY startedAt DESC LIMIT 1")
+    @Query("""
+        SELECT * FROM workout_sessions
+        WHERE status = 'ACTIVE'
+        ORDER BY startedAt DESC LIMIT 1
+    """)
     fun observeInProgressSession(): Flow<WorkoutSession?>
+
+    @Query("""
+        SELECT ws.id FROM workout_sessions ws
+        WHERE ws.status = 'ACTIVE'
+          AND MAX(
+              ws.startedAt,
+              COALESCE(
+                  (SELECT MAX(se.loggedAt) FROM set_entries se WHERE se.workoutSessionId = ws.id),
+                  ws.startedAt
+              )
+          ) < :expiryCutoff
+    """)
+    suspend fun getExpiredActiveSessionIds(expiryCutoff: Long): List<Long>
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'PARTIAL', endedAt = :endedAt
+        WHERE status = 'ACTIVE'
+          AND MAX(
+              startedAt,
+              COALESCE(
+                  (SELECT MAX(se.loggedAt) FROM set_entries se WHERE se.workoutSessionId = workout_sessions.id),
+                  startedAt
+              )
+          ) < :expiryCutoff
+    """)
+    suspend fun archiveExpiredSessions(
+        expiryCutoff: Long,
+        endedAt: Long
+    ): Int
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'COMPLETED', endedAt = :endedAt
+        WHERE id = :id AND status = 'ACTIVE'
+    """)
+    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
+
+    @Query("""
+        UPDATE workout_sessions
+        SET status = 'ABANDONED', endedAt = :endedAt
+        WHERE id = :id AND status = 'ACTIVE'
+    """)
+    suspend fun abandonSession(id: Long, endedAt: Long = System.currentTimeMillis()): Int
+
+    /**
+     * Atomically verifies that a session is still ACTIVE and then either removes
+     * an empty session or preserves its logged sets as ABANDONED history.
+     */
+    @Transaction
+    suspend fun abandonActiveSession(id: Long, endedAt: Long = System.currentTimeMillis()): Boolean {
+        val session = getSession(id) ?: return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+
+        if (getSetCountForSession(id) == 0) {
+            deleteSessionAndSets(session)
+        } else {
+            if (abandonSession(id, endedAt) != 1) return false
+        }
+        return true
+    }
+
+    /**
+     * Atomically verifies the session lifecycle and writes the set.
+     * Crossing midnight does not invalidate an otherwise active session.
+     */
+    @Transaction
+    suspend fun logSetIfActive(set: SetEntry): Boolean {
+        val session = getSession(set.workoutSessionId) ?: return false
+        if (session.status != WorkoutSessionStatus.ACTIVE) return false
+
+        val nextIndex = getMaxSetIndex(set.workoutSessionId, set.exerciseId) + 1
+        upsertSet(set.copy(setIndex = nextIndex))
+        return true
+    }
 
     @Query("SELECT * FROM workout_sessions ORDER BY startedAt DESC")
     fun observeAllSessions(): Flow<List<WorkoutSession>>
@@ -28,11 +112,8 @@ interface WorkoutDao {
     @Query("SELECT * FROM workout_sessions WHERE id = :id")
     suspend fun getSession(id: Long): WorkoutSession?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertSession(session: WorkoutSession): Long
-
-    @Query("UPDATE workout_sessions SET completed = 1, endedAt = :endedAt WHERE id = :id")
-    suspend fun completeSession(id: Long, endedAt: Long = System.currentTimeMillis())
 
     @Delete
     suspend fun deleteSession(session: WorkoutSession)
@@ -55,7 +136,7 @@ interface WorkoutDao {
     @Query("""
         SELECT se.* FROM set_entries se
         INNER JOIN workout_sessions ws ON ws.id = se.workoutSessionId
-        WHERE se.exerciseId = :exerciseId AND ws.completed = 1
+        WHERE se.exerciseId = :exerciseId AND ws.status = 'COMPLETED'
         ORDER BY se.loggedAt DESC LIMIT :limit
     """)
     suspend fun getRecentSetsForExercise(exerciseId: Long, limit: Int = 50): List<SetEntry>
@@ -66,8 +147,10 @@ interface WorkoutDao {
     @Query("SELECT * FROM set_entries WHERE exerciseId = :exerciseId ORDER BY loggedAt DESC")
     fun observeAllSetsForExercise(exerciseId: Long): Flow<List<SetEntry>>
 
-    /** Written immediately when a set is confirmed — this single call is the data-loss guarantee. */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Query("SELECT COUNT(*) FROM set_entries WHERE workoutSessionId = :sessionId")
+    suspend fun getSetCountForSession(sessionId: Long): Int
+
+    @Upsert
     suspend fun upsertSet(set: SetEntry): Long
 
     @Query("SELECT COALESCE(MAX(setIndex), 0) FROM set_entries WHERE workoutSessionId = :sessionId AND exerciseId = :exerciseId")

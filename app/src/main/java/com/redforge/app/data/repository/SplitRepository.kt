@@ -5,12 +5,8 @@ import com.redforge.app.data.local.entities.Split
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.SplitDayExercise
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 class SplitRepository(private val dao: SplitDao) {
-
-    private val activationMutex = Mutex()
 
     fun observeAllSplits(): Flow<List<Split>> = dao.observeAllSplits()
     fun observeActiveSplit(): Flow<Split?> = dao.observeActiveSplit()
@@ -20,25 +16,14 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Deletes a split along with every day and exercise-assignment that belongs to it — nothing orphaned. */
     suspend fun deleteSplit(split: Split) {
-        val days = dao.getDaysOnce(split.id)
-        days.forEach { day ->
-            dao.clearExercisesForDay(day.id)
-            dao.deleteDay(day)
-        }
         dao.deleteSplit(split)
     }
 
     /** Activates [splitId] as the one-and-only active split (used for streaks + Home). */
-    suspend fun setActiveSplit(splitId: Long) {
-        activationMutex.withLock {
-            dao.clearActiveFlag()
-            dao.markActive(splitId)
-        }
-    }
+    suspend fun setActiveSplit(splitId: Long): Boolean =
+        dao.activateSplit(splitId)
 
-    suspend fun clearActiveSplit() {
-        activationMutex.withLock { dao.clearActiveFlag() }
-    }
+    suspend fun clearActiveSplit() = dao.clearActiveFlag()
 
     fun observeDays(splitId: Long): Flow<List<SplitDay>> = dao.observeDaysForSplit(splitId)
     suspend fun getDay(id: Long) = dao.getDay(id)
@@ -46,7 +31,6 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Deletes a day and any exercise-assignments under it — nothing orphaned. */
     suspend fun deleteDay(day: SplitDay) {
-        dao.clearExercisesForDay(day.id)
         dao.deleteDay(day)
     }
 
@@ -57,10 +41,7 @@ class SplitRepository(private val dao: SplitDao) {
 
     /** Replaces the full exercise list for a day in one shot — used by the drag-to-reorder editor. */
     suspend fun replaceDayExercises(dayId: Long, exercises: List<SplitDayExercise>) {
-        dao.clearExercisesForDay(dayId)
-        exercises.forEachIndexed { index, entry ->
-            dao.upsertDayExercise(entry.copy(splitDayId = dayId, orderIndex = index))
-        }
+        dao.replaceDayExercises(dayId, exercises)
     }
 
 }

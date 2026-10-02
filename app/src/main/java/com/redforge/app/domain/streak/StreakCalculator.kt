@@ -1,6 +1,7 @@
 package com.redforge.app.domain.streak
 
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -32,7 +33,7 @@ object StreakCalculator {
         scheduleAnchorStartMillis: Long? = null,
         skippedDayStartMillis: Long? = null
     ): StreakResult {
-        val completed = sessions.filter { it.completed }.sortedBy { it.startedAt }
+        val completed = sessions.filter { it.status == WorkoutSessionStatus.COMPLETED }.sortedBy { it.startedAt }
         if (completed.isEmpty()) return StreakResult(0, 0, 0L)
 
         val uniqueDays = completed
@@ -59,13 +60,13 @@ object StreakCalculator {
         var current = 1
         var longest = 1
         for (index in 1 until uniqueDays.size) {
-            val gap = uniqueDays[index].differenceFrom(uniqueDays[index - 1], timeZone)
+            val gap = uniqueDays[index].differenceFrom(uniqueDays[index - 1])
             current = if (gap <= maxGapDays) current + 1 else 1
             longest = maxOf(longest, current)
         }
 
         val today = CalendarDay.from(nowMillis, timeZone)
-        val daysSinceLast = today.differenceFrom(uniqueDays.last(), timeZone)
+        val daysSinceLast = today.differenceFrom(uniqueDays.last())
         val liveCurrent = if (daysSinceLast > maxGapDays) 0 else current
 
         return StreakResult(
@@ -170,7 +171,7 @@ object StreakCalculator {
         scheduledTrainingDayOrders: Set<Int>,
         timeZone: TimeZone
     ): Boolean {
-        val elapsed = day.differenceFrom(anchor, timeZone)
+        val elapsed = day.differenceFrom(anchor)
         if (elapsed < 0) return false
         val zeroBasedOrder = (elapsed % cycleLength).toInt()
         return (zeroBasedOrder + 1) in scheduledTrainingDayOrders
@@ -195,27 +196,19 @@ object StreakCalculator {
         override fun compareTo(other: CalendarDay): Int =
             compareValuesBy(this, other, { it.era }, { it.year }, { it.dayOfYear })
 
-        fun differenceFrom(other: CalendarDay, timeZone: TimeZone): Int {
-            val start = toCalendar(timeZone).also {
-                it.set(Calendar.ERA, era)
-                it.set(Calendar.YEAR, year)
-                it.set(Calendar.DAY_OF_YEAR, dayOfYear)
-            }
-            val end = toCalendar(timeZone).also {
-                it.set(Calendar.ERA, other.era)
-                it.set(Calendar.YEAR, other.year)
-                it.set(Calendar.DAY_OF_YEAR, other.dayOfYear)
-            }
+        fun differenceFrom(other: CalendarDay): Int {
+            // Calendar-day ordinal arithmetic keeps DST transitions from changing the
+            // distance and avoids the previous day-by-day traversal (O(gapDays)).
+            val thisYear = if (era == 1) year else 1 - year
+            val otherYear = if (other.era == 1) other.year else 1 - other.year
+            return (daysBeforeYear(thisYear) + dayOfYear - 1L -
+                (daysBeforeYear(otherYear) + other.dayOfYear - 1L)).toInt()
+        }
 
-            var cursor = end.clone() as Calendar
-            var difference = 0
-            while (!sameCalendarDate(cursor, start)) {
-                val forward = cursor.before(start)
-                cursor.add(Calendar.DAY_OF_YEAR, if (forward) 1 else -1)
-                difference += if (forward) 1 else -1
-                if (kotlin.math.abs(difference) > 100_000) break
-            }
-            return difference
+        private fun daysBeforeYear(year: Int): Long {
+            val y = year - 1L
+            return 365L * y + Math.floorDiv(y, 4L) -
+                Math.floorDiv(y, 100L) + Math.floorDiv(y, 400L)
         }
 
         fun plusDays(timeZone: TimeZone): CalendarDay {
@@ -238,8 +231,4 @@ object StreakCalculator {
             }
     }
 
-    private fun sameCalendarDate(a: Calendar, b: Calendar): Boolean =
-        a.get(Calendar.ERA) == b.get(Calendar.ERA) &&
-            a.get(Calendar.YEAR) == b.get(Calendar.YEAR) &&
-            a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR)
 }

@@ -2,6 +2,7 @@ package com.redforge.app.domain.schedule
 
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import java.util.Calendar
 import java.util.TimeZone
 
@@ -55,7 +56,7 @@ object SplitScheduler {
 
         val lastCompletedForThisSplit = recentSessions
             .asSequence()
-            .filter { it.completed && it.splitDayId != null && dayIdToIndex.containsKey(it.splitDayId) }
+            .filter { it.status == WorkoutSessionStatus.COMPLETED && it.splitDayId != null && dayIdToIndex.containsKey(it.splitDayId) }
             .filter { session ->
                 anchorDay == null ||
                     calendarDayDifference(anchorDay.timeInMillis, session.startedAt, timeZone) >= 0

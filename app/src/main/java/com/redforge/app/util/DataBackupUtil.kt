@@ -26,6 +26,7 @@ import java.util.zip.ZipOutputStream
 object DataBackupUtil {
 
     private const val BACKUP_FORMAT_VERSION = 1
+    private const val DATABASE_VERSION = 5
     private const val DB_ENTRY = "redforge.db"
     private const val PREFS_ENTRY = "redforge_settings.preferences_pb"
     private const val PHOTOS_ENTRY_PREFIX = "progress_photos/"
@@ -34,20 +35,27 @@ object DataBackupUtil {
     private const val MAX_ENTRY_BYTES = 100L * 1024L * 1024L
     private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 250L * 1024L * 1024L
 
-    fun exportBackup(context: Context): Uri? {
+    suspend fun exportBackup(context: Context): Uri? {
+        var zipFile: File? = null
         return try {
             val db = RedForgeDatabase.getInstance(context)
+            RedForgeDatabase.awaitSeeded()
 
             if (!db.isOpen) {
                 return null
             }
 
-            // Flush WAL contents into the main database file before taking the
-            // snapshot. Do not wrap the file copy in a SQL transaction: the
-            // database file is the snapshot target, not the transaction target.
+            // Flush WAL contents through the same Room database handle that
+            // owns the current connection pool. Opening a second SQLite handle
+            // can leave Room's most recent writes in its WAL while the main file
+            // is copied below, producing a valid but stale backup.
             db.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
-                .use { }
+                .query("PRAGMA wal_checkpoint(TRUNCATE)", emptyArray())
+                .use { cursor ->
+                    if (!cursor.moveToFirst() || cursor.getInt(0) != 0) {
+                        throw IllegalStateException("Could not checkpoint the database before backup")
+                    }
+                }
 
             val timestamp = SimpleDateFormat(
                 "yyyyMMdd_HHmmss",
@@ -61,7 +69,7 @@ object DataBackupUtil {
                 mkdirs()
             }
 
-            val zipFile = File(
+            zipFile = File(
                 exportDir,
                 "redforge_backup_$timestamp.zip"
             )
@@ -83,12 +91,12 @@ object DataBackupUtil {
                 validateSQLiteDatabase(snapshotFile)
 
                 ZipOutputStream(
-                    FileOutputStream(zipFile)
+                    FileOutputStream(requireNotNull(zipFile))
                 ).use { zip ->
                     writeTextEntry(
                         zip,
                         MARKER_ENTRY,
-                        "RedForge backup|format=$BACKUP_FORMAT_VERSION|created=$timestamp"
+                        "RedForge backup|format=$BACKUP_FORMAT_VERSION|dbVersion=$DATABASE_VERSION|created=$timestamp"
                     )
 
                     addFileToZip(
@@ -139,10 +147,11 @@ object DataBackupUtil {
             FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
-                zipFile
+                requireNotNull(zipFile)
             )
-        } catch (_: Exception) {
-            null
+        } catch (e: Exception) {
+            runCatching { zipFile?.delete() }
+            throw e
         }
     }
 
@@ -181,6 +190,7 @@ object DataBackupUtil {
                     var total = 0L
                     var markerFound = false
                     var databaseFound = false
+                    val seenEntries = HashSet<String>()
                     var entry = zip.nextEntry
 
                     while (entry != null) {
@@ -188,6 +198,11 @@ object DataBackupUtil {
                             entry.name,
                             allowMarker = true
                         )
+
+                        if (!seenEntries.add(entry.name)) {
+                            throw IllegalArgumentException("Duplicate archive entry")
+                        }
+
 
                         when {
                             entry.name == MARKER_ENTRY -> {
@@ -291,6 +306,9 @@ object DataBackupUtil {
             rollbackRoot,
             PHOTOS_ENTRY_PREFIX
         )
+        val hadCurrentDb = currentDb.isFile
+        val hadCurrentPrefs = currentPrefs.isFile
+        val hadCurrentPhotos = currentPhotos.isDirectory
 
         return try {
             stagingRoot.mkdirs()
@@ -300,6 +318,7 @@ object DataBackupUtil {
             var markerFound = false
             var databaseFound = false
             var preferencesFound = false
+            val seenEntries = HashSet<String>()
 
             context.contentResolver.openInputStream(uri)?.use { input ->
                 ZipInputStream(input).use { zip ->
@@ -310,6 +329,10 @@ object DataBackupUtil {
                             entry.name,
                             allowMarker = true
                         )
+
+                        if (!seenEntries.add(entry.name)) {
+                            throw IllegalArgumentException("Duplicate archive entry")
+                        }
 
                         when {
                             entry.name == MARKER_ENTRY -> {
@@ -423,9 +446,14 @@ object DataBackupUtil {
             File(currentDb.path + "-wal").delete()
             File(currentDb.path + "-shm").delete()
 
-            if (currentDb.exists() && !currentDb.delete()) {
+            // Use Context.deleteDatabase() so Android removes the database
+            // together with any journal/WAL sidecars that may still exist.
+            // Directly deleting only the main file can leave SQLite state
+            // behind and make the subsequent restore fail on emulators.
+            context.deleteDatabase("redforge.db")
+            if (currentDb.exists()) {
                 throw IllegalStateException(
-                    "Could not replace the existing database"
+                    "Could not remove the existing database"
                 )
             }
 
@@ -460,19 +488,23 @@ object DataBackupUtil {
             // Best-effort rollback. The app will remain usable after a failed
             // restore because the original database/settings/photos are put back.
             try {
+                File(currentDb.path + "-wal").delete()
+                File(currentDb.path + "-shm").delete()
                 if (rollbackDb.isFile) {
-                    File(currentDb.path + "-wal").delete()
-                    File(currentDb.path + "-shm").delete()
                     if (currentDb.exists()) {
                         currentDb.delete()
                     }
                     currentDb.parentFile?.mkdirs()
                     copyFile(rollbackDb, currentDb)
+                } else if (!hadCurrentDb) {
+                    currentDb.delete()
                 }
 
                 if (rollbackPrefs.isFile) {
                     currentPrefs.parentFile?.mkdirs()
                     copyFile(rollbackPrefs, currentPrefs)
+                } else if (!hadCurrentPrefs) {
+                    currentPrefs.delete()
                 }
 
                 if (rollbackPhotos.isDirectory) {
@@ -481,6 +513,8 @@ object DataBackupUtil {
                         rollbackPhotos,
                         currentPhotos
                     )
+                } else if (!hadCurrentPhotos) {
+                    currentPhotos.deleteRecursively()
                 }
             } catch (_: Exception) {
                 // Nothing else can safely be done here.

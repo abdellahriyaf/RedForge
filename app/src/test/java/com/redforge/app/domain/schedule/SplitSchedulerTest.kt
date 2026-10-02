@@ -2,6 +2,7 @@ package com.redforge.app.domain.schedule
 
 import com.redforge.app.data.local.entities.SplitDay
 import com.redforge.app.data.local.entities.WorkoutSession
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Calendar
@@ -59,6 +60,33 @@ class SplitSchedulerTest {
     }
 
     @Test
+    fun `partial and abandoned sessions do not advance the schedule`() {
+        val monday = millis(2026, Calendar.SEPTEMBER, 7)
+        val tuesday = millis(2026, Calendar.SEPTEMBER, 8)
+        val result = SplitScheduler.nextDay(
+            days = days,
+            recentSessions = listOf(
+                WorkoutSession(
+                    splitDayId = 1L,
+                    splitDayNameSnapshot = "Push",
+                    startedAt = monday,
+                    status = WorkoutSessionStatus.PARTIAL
+                ),
+                WorkoutSession(
+                    splitDayId = 2L,
+                    splitDayNameSnapshot = "Pull",
+                    startedAt = tuesday,
+                    status = WorkoutSessionStatus.ABANDONED
+                )
+            ),
+            targetTimeMillis = tuesday,
+            timeZone = zone
+        )
+
+        assertEquals("Push", result?.name)
+    }
+
+    @Test
     fun `calendar advances past rest day to the next training day`() {
         val lastPull = millis(2026, Calendar.SEPTEMBER, 7)
         val targetLegDay = millis(2026, Calendar.SEPTEMBER, 9)
@@ -77,7 +105,7 @@ class SplitSchedulerTest {
         splitDayId = dayId,
         splitDayNameSnapshot = "Day",
         startedAt = startedAt,
-        completed = true
+        status = WorkoutSessionStatus.COMPLETED
     )
 
     private fun millis(year: Int, month: Int, day: Int, hour: Int = 18): Long =

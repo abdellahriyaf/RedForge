@@ -10,6 +10,7 @@ import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
 import com.redforge.app.domain.schedule.SplitScheduler
+import com.redforge.app.domain.time.WorkoutClock
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -98,14 +99,9 @@ class ActiveWorkoutViewModel(
             }
 
             val allSessions = workoutRepository.observeAllSessions().first()
-            val todayStart = java.util.Calendar.getInstance().apply {
-                set(java.util.Calendar.HOUR_OF_DAY, 0)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                set(java.util.Calendar.MILLISECOND, 0)
-            }.timeInMillis
+            val todayStart = WorkoutClock.startOfDayMillis()
             val completedToday = allSessions.any { session ->
-                session.completed &&
+                session.status == WorkoutSessionStatus.COMPLETED &&
                     session.splitDayId != null &&
                     days.any { it.id == session.splitDayId } &&
                     session.startedAt >= todayStart
@@ -161,8 +157,12 @@ class ActiveWorkoutViewModel(
                     val blocks = dayExercises.sortedBy { it.orderIndex }.mapNotNull { dayExercise ->
                         val exercise = exerciseRepository.getById(dayExercise.exerciseId) ?: return@mapNotNull null
                         val loggedForThis = sets.filter { it.exerciseId == dayExercise.exerciseId }.sortedBy { it.setIndex }
-                        val recentPrevious = workoutRepository.getRecentSetsForExercise(dayExercise.exerciseId, 1)
-                            .firstOrNull()
+                        val completedHistory = workoutRepository.getRecentSetsForExercise(dayExercise.exerciseId, 1000)
+                        val derivedLoggedSets = derivePersonalRecords(
+                            currentSets = loggedForThis,
+                            completedHistory = completedHistory
+                        )
+                        val recentPrevious = completedHistory.firstOrNull()
                         val targetSets = if (_uiState.value.isDeloadCycle) {
                             maxOf(1, ceil(dayExercise.targetSets * DELOAD_REMAINING_VOLUME_FACTOR).toInt())
                         } else {
@@ -171,7 +171,7 @@ class ActiveWorkoutViewModel(
                         WorkoutExerciseBlock(
                             dayExercise = dayExercise,
                             exercise = exercise,
-                            loggedSets = loggedForThis,
+                            loggedSets = derivedLoggedSets,
                             lastPreviousSet = recentPrevious,
                             targetSetsForToday = targetSets,
                             restSecondsForToday = if (dayExercise.targetRestSeconds > 0) {
@@ -199,9 +199,18 @@ class ActiveWorkoutViewModel(
 
         viewModelScope.launch {
             sessionWriteMutex.withLock {
+                val freshSession = workoutRepository.getSession(session.id)
+                if (freshSession?.status != WorkoutSessionStatus.ACTIVE) {
+                    _uiState.value = _uiState.value.copy(
+                        session = freshSession,
+                        error = "This workout day has ended. Your logged sets were preserved in History."
+                    )
+                    return@withLock
+                }
+
                 val nextIndex = workoutRepository.getMaxSetIndex(session.id, exerciseId) + 1
 
-                var isPr = false
+                var prCelebration: PrCelebration? = null
                 if (!isWarmup) {
                     val completedHistory = workoutRepository.getRecentSetsForExercise(exerciseId, 1000)
                     val currentSessionSets = workoutRepository.getSetsOnce(session.id)
@@ -209,8 +218,7 @@ class ActiveWorkoutViewModel(
                     val previousBest = StrengthFormulas.bestEstimated1RM(completedHistory + currentSessionSets)
                     val newEstimate = StrengthFormulas.estimated1RM(weight, reps)
                     if (previousBest > 0.0 && newEstimate > previousBest) {
-                        isPr = true
-                        _prEvent.value = PrCelebration(
+                        prCelebration = PrCelebration(
                             exerciseName = block.exercise.name,
                             newEstimated1RM = StrengthFormulas.displayRounded(newEstimate),
                             previousBest = StrengthFormulas.displayRounded(previousBest)
@@ -218,7 +226,7 @@ class ActiveWorkoutViewModel(
                     }
                 }
 
-                workoutRepository.logSet(
+                val logged = workoutRepository.logSet(
                     SetEntry(
                         workoutSessionId = session.id,
                         exerciseId = exerciseId,
@@ -227,13 +235,47 @@ class ActiveWorkoutViewModel(
                         reps = reps,
                         isWarmup = isWarmup,
                         rpe = rpe,
-                        isPersonalRecord = isPr
+                        // PR state is derived from history when the workout is read.
+                        // Do not persist a flag that can become stale after edits/deletes.
+                        isPersonalRecord = false
                     )
                 )
+
+                if (!logged) {
+                    _uiState.value = _uiState.value.copy(
+                        session = workoutRepository.getSession(session.id),
+                        error = "This workout day has ended. Your logged sets were preserved in History."
+                    )
+                    return@withLock
+                }
+
+                prCelebration?.let { _prEvent.value = it }
 
                 if (!isWarmup && isLastInSupersetGroup(block.dayExercise)) {
                     _lastLoggedSetTriggersRest.value = block.restSecondsForToday
                 }
+            }
+        }
+    }
+
+    private fun derivePersonalRecords(
+        currentSets: List<SetEntry>,
+        completedHistory: List<SetEntry>
+    ): List<SetEntry> {
+        var previousBest = StrengthFormulas.bestEstimated1RM(
+            completedHistory.filter { !it.isWarmup }
+        )
+
+        return currentSets.map { set ->
+            if (set.isWarmup) {
+                set.copy(isPersonalRecord = false)
+            } else {
+                val estimate = StrengthFormulas.estimated1RM(set.weight, set.reps)
+                val isPr = previousBest > 0.0 && estimate > previousBest
+                if (estimate > previousBest) {
+                    previousBest = estimate
+                }
+                set.copy(isPersonalRecord = isPr)
             }
         }
     }
@@ -275,14 +317,35 @@ class ActiveWorkoutViewModel(
 
         viewModelScope.launch {
             try {
-                sessionWriteMutex.withLock {
-                    workoutRepository.completeSession(session.id)
+                val expired = sessionWriteMutex.withLock {
+                    val freshSession = workoutRepository.getSession(session.id)
+                    if (freshSession?.status != WorkoutSessionStatus.ACTIVE) {
+                        _uiState.value = _uiState.value.copy(
+                            session = freshSession,
+                            isFinishing = false,
+                            error = "This workout day has ended. Your logged sets were preserved in History."
+                        )
+                        true
+                    } else {
+                        if (!workoutRepository.completeSession(session.id)) {
+                            _uiState.value = _uiState.value.copy(
+                                session = workoutRepository.getSession(session.id),
+                                isFinishing = false,
+                                error = "This workout day has ended. Your logged sets were preserved in History."
+                            )
+                            true
+                        } else {
+                            false
+                        }
+                    }
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    isFinishing = false,
-                    finished = true
-                )
+                if (!expired) {
+                    _uiState.value = _uiState.value.copy(
+                        isFinishing = false,
+                        finished = true
+                    )
+                }
             } catch (_: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isFinishing = false,
@@ -304,7 +367,7 @@ class ActiveWorkoutViewModel(
         viewModelScope.launch {
             try {
                 sessionWriteMutex.withLock {
-                    workoutRepository.deleteSession(session)
+                    workoutRepository.abandonSession(session)
                 }
 
                 _uiState.value = _uiState.value.copy(

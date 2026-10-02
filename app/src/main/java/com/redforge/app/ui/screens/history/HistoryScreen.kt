@@ -22,6 +22,7 @@ import com.redforge.app.ui.components.EmberEmptyState
 import com.redforge.app.ui.components.ForgeCard
 import com.redforge.app.ui.components.ForgeSectionHeader
 import com.redforge.app.viewmodel.HistorySessionUi
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.viewmodel.HistoryViewModel
 import com.redforge.app.viewmodel.redForgeViewModel
 import java.text.SimpleDateFormat
@@ -45,8 +46,8 @@ fun HistoryScreen(
         if (sessions.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 EmberEmptyState(
-                    title = "No completed workouts yet",
-                    message = "Finish your first training session and RedForge will keep the record here."
+                    title = "No workout history yet",
+                    message = "Completed, partial, and abandoned workouts will stay here so your logged work is never silently lost."
                 )
             }
         } else {
@@ -84,6 +85,16 @@ private fun HistoryCard(
                 Text(
                     item.session.splitDayNameSnapshot,
                     style = MaterialTheme.typography.titleMedium
+                )
+                Text(
+                    when (item.session.status) {
+                        WorkoutSessionStatus.COMPLETED -> "Completed"
+                        WorkoutSessionStatus.PARTIAL -> "Partial · day ended before completion"
+                        WorkoutSessionStatus.ABANDONED -> "Abandoned · logged work preserved"
+                        WorkoutSessionStatus.ACTIVE -> "Active"
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     SimpleDateFormat(

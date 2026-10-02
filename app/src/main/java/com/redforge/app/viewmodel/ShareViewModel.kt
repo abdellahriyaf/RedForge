@@ -2,6 +2,7 @@ package com.redforge.app.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
 import com.redforge.app.data.repository.SplitRepository
 import com.redforge.app.data.repository.WorkoutRepository
 import com.redforge.app.domain.formulas.StrengthFormulas
@@ -38,7 +39,7 @@ class ShareViewModel(
             val (from, to) = rangeFor(scope)
             val sessions = workoutRepository
                 .getSessionsBetween(from, to)
-                .filter { it.completed }
+                .filter { it.status == WorkoutSessionStatus.COMPLETED }
 
             var totalSets = 0
             var totalVolume = 0.0

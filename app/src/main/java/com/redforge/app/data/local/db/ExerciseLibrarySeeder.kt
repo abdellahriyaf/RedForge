@@ -26,8 +26,12 @@ object ExerciseLibrarySeeder {
                         referenceLink = old.referenceLink,
                         notes = old.notes,
                         createdAt = old.createdAt,
-                        isCustom = false
+                        isCustom = false,
+                        isArchived = old.isArchived
                     )
+                }
+                !old.isCustom && old.seedKey != seed.seedKey -> {
+                    enrichments += old.copy(seedKey = seed.seedKey)
                 }
             }
         }
@@ -62,6 +66,7 @@ object ExerciseLibrarySeeder {
         name = name,
         muscleGroup = group,
         equipment = equipment,
+        seedKey = "builtin:" + name.lowercase().replace(" ", "_").replace("-", "_"),
         aliases = aliases,
         primaryMuscles = primary,
         secondaryMuscles = secondary,

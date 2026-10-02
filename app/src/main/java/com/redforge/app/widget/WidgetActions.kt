@@ -7,8 +7,9 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.updateAll
 import com.redforge.app.RedForgeApplication
 import com.redforge.app.domain.schedule.SplitScheduler
+import com.redforge.app.data.local.entities.WorkoutSessionStatus
+import com.redforge.app.domain.time.WorkoutClock
 import kotlinx.coroutines.flow.first
-import java.util.Calendar
 
 class SkipWorkoutAction : ActionCallback {
     override suspend fun onAction(
@@ -18,7 +19,7 @@ class SkipWorkoutAction : ActionCallback {
     ) {
         val app = context.applicationContext as RedForgeApplication
         val split = app.splitRepository.observeActiveSplit().first() ?: return
-        val inProgress = app.workoutRepository.observeInProgressSession().first()
+        val inProgress = app.workoutRepository.getInProgressSession()
         if (inProgress != null) return
 
         val sessions = app.workoutRepository.observeAllSessions().first()
@@ -26,13 +27,13 @@ class SkipWorkoutAction : ActionCallback {
         val settings = app.settingsDataStore.settingsFlow.first()
 
         val now = System.currentTimeMillis()
-        val todayStart = startOfDayMillis(now)
+        val todayStart = WorkoutClock.startOfDayMillis(now)
 
         val alreadyCompleted = sessions.any { session ->
-            session.completed &&
+            session.status == WorkoutSessionStatus.COMPLETED &&
                 session.splitDayId != null &&
                 days.any { it.id == session.splitDayId } &&
-                startOfDayMillis(session.startedAt) == todayStart
+                WorkoutClock.startOfDayMillis(session.startedAt) == todayStart
         }
         if (alreadyCompleted) return
 
@@ -56,12 +57,4 @@ class SkipWorkoutAction : ActionCallback {
         RedForgeWidget().updateAll(context)
     }
 
-    private fun startOfDayMillis(millis: Long): Long =
-        Calendar.getInstance().apply {
-            timeInMillis = millis
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
 }

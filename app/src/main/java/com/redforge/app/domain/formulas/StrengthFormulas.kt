@@ -15,19 +15,25 @@ import kotlin.math.roundToInt
  */
 object StrengthFormulas {
 
+    // High-rep 1RM extrapolation becomes increasingly unreliable and can
+    // produce absurd PRs. RedForge only estimates 1RM from 1-12 reps; higher-
+    // rep sets still count normally for volume.
+    const val MAX_ESTIMATED_1RM_REPS: Int = 12
+
     /** Epley formula: 1RM = w * (1 + r/30). Slightly favors higher-rep estimates. */
     fun epley1RM(weight: Double, reps: Int): Double {
         if (reps <= 0) return 0.0
-        if (reps == 1) return weight
-        return weight * (1 + reps / 30.0)
+        val effectiveReps = reps.coerceAtMost(MAX_ESTIMATED_1RM_REPS)
+        if (effectiveReps == 1) return weight
+        return weight * (1 + effectiveReps / 30.0)
     }
 
     /** Brzycki formula: 1RM = w * 36 / (37 - r). More accurate for reps below ~10. */
     fun brzycki1RM(weight: Double, reps: Int): Double {
         if (reps <= 0) return 0.0
-        if (reps == 1) return weight
-        if (reps >= 37) return weight // formula breaks down; avoid divide-by-zero/negative
-        return weight * 36.0 / (37.0 - reps)
+        val effectiveReps = reps.coerceAtMost(MAX_ESTIMATED_1RM_REPS)
+        if (effectiveReps == 1) return weight
+        return weight * 36.0 / (37.0 - effectiveReps)
     }
 
     /** Blended estimate — average of Epley and Brzycki, a reasonable single number to show the user. */
