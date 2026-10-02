@@ -149,9 +149,9 @@ object DataBackupUtil {
                 "${context.packageName}.fileprovider",
                 requireNotNull(zipFile)
             )
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             runCatching { zipFile?.delete() }
-            null
+            throw e
         }
     }
 
