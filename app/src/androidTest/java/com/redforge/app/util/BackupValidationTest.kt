@@ -76,7 +76,7 @@ class BackupValidationTest {
 
         val restoredFile = context.getDatabasePath("redforge.db")
         SQLiteDatabase.openDatabase(
-            restoredFile,
+            restoredFile.absolutePath,
             null,
             SQLiteDatabase.OPEN_READONLY
         ).use { restoredDb ->
