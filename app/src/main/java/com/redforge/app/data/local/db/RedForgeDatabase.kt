@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 @Database(
     entities = [
@@ -63,7 +64,10 @@ abstract class RedForgeDatabase : RoomDatabase() {
         /** Closes and clears the cached instance so its underlying file can be safely overwritten — used by manual data import. */
         fun closeInstance() {
             synchronized(this) {
-                seedJob?.cancel()
+                seedJob?.let { job ->
+                    job.cancel()
+                    runBlocking { job.join() }
+                }
                 seedJob = null
                 INSTANCE?.close()
                 INSTANCE = null
