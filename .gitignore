@@ -1,0 +1,23 @@
+# Gradle
+.gradle/
+
+# Build outputs
+build/
+*/build/
+
+# Local Android/IDE state
+.idea/
+*.iml
+local.properties
+
+# Generated Room schema output is versioned intentionally.
+# Keep app/schemas/ under source control; do not ignore it.
+
+# Signing / local secrets
+*.jks
+*.keystore
+keystore.properties
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
