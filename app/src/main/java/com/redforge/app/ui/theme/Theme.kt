@@ -7,7 +7,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
@@ -54,7 +56,9 @@ fun RedForgeTheme(
     forceDark: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val useDark = forceDark || darkTheme
+    // RedForge uses a dark-only visual system; never let the device light theme
+    // switch Material text/content colors to black over the dark app surfaces.
+    val useDark = true
     val colorScheme = if (useDark) ForgeDarkColorScheme else ForgeLightColorScheme
 
     val view = LocalView.current
@@ -73,6 +77,13 @@ fun RedForgeTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = ForgeTypography,
-        content = content
-    )
+    ) {
+        // Plain Compose Text resolves its default color from LocalContentColor.
+        // The app is dark and its root surfaces are transparent, so provide the
+        // dark theme foreground explicitly instead of allowing black text.
+        CompositionLocalProvider(
+            LocalContentColor provides colorScheme.onBackground,
+            content = content
+        )
+    }
 }
