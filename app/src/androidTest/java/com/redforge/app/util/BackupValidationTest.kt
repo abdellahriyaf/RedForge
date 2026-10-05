@@ -1,6 +1,7 @@
 package com.redforge.app.util
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.redforge.app.data.local.db.RedForgeDatabase
@@ -73,11 +74,33 @@ class BackupValidationTest {
             DataBackupUtil.importBackup(context, exportedUri)
         )
 
+        val restoredFile = context.getDatabasePath("redforge.db")
+        SQLiteDatabase.openDatabase(
+            restoredFile,
+            null,
+            SQLiteDatabase.OPEN_READONLY
+        ).use { restoredDb ->
+            restoredDb.query(
+                "exercises",
+                arrayOf("name"),
+                "name = ?",
+                arrayOf(exerciseName),
+                null,
+                null,
+                null
+            ).use { cursor ->
+                assertTrue(
+                    "restored SQLite file did not contain the test exercise",
+                    cursor.moveToFirst()
+                )
+            }
+        }
+
         RedForgeDatabase.closeInstance()
         val restored = RedForgeDatabase.getInstance(context)
 
         assertNotNull(
-            "restored database did not contain the test exercise",
+            "Room lost the test exercise while reopening the restored database",
             restored.exerciseDao().getByName(exerciseName)
         )
     }
