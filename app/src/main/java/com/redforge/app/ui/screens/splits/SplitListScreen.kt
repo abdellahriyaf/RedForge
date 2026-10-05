@@ -217,28 +217,32 @@ private fun CreateSplitDialog(onDismiss: () -> Unit, onCreate: (String, SplitTem
     var name by remember { mutableStateOf("") }
     var template by remember { mutableStateOf(SplitTemplate.CUSTOM) }
 
+    val isCustom = template == SplitTemplate.CUSTOM
+    val resolvedName = if (isCustom) name.trim() else template.label
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New split") },
         text = {
             Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Split name") },
-                    singleLine = true,
-                    placeholder = { Text("e.g. Push / Pull / Legs") },
-                    modifier = Modifier.fillMaxWidth()
+                Text(
+                    "Choose a training split to get started.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(14.dp))
                 Text("Start from a template", style = MaterialTheme.typography.labelLarge)
                 Spacer(Modifier.height(6.dp))
+
                 SplitTemplate.values().forEach { option ->
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)
                     ) {
-                        RadioButton(selected = template == option, onClick = { template = option })
+                        RadioButton(
+                            selected = template == option,
+                            onClick = { template = option }
+                        )
                         Column {
                             Text(option.label, style = MaterialTheme.typography.bodyLarge)
                             if (option.days.isNotEmpty()) {
@@ -251,10 +255,32 @@ private fun CreateSplitDialog(onDismiss: () -> Unit, onCreate: (String, SplitTem
                         }
                     }
                 }
+
+                if (isCustom) {
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Split name") },
+                        singleLine = true,
+                        placeholder = { Text("e.g. My 4-day split") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "RedForge will name this split “$resolvedName”. You can rename it later.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (name.isNotBlank()) onCreate(name.trim(), template) }, enabled = name.isNotBlank()) {
+            TextButton(
+                onClick = { onCreate(resolvedName, template) },
+                enabled = resolvedName.isNotBlank()
+            ) {
                 Text("Create")
             }
         },
