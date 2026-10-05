@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.redforge.app.data.local.dao.ExerciseDao
 import com.redforge.app.data.local.dao.ProgressDao
 import com.redforge.app.data.local.dao.SplitDao
@@ -13,7 +12,9 @@ import com.redforge.app.data.local.dao.WorkoutDao
 import com.redforge.app.data.local.entities.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 @Database(
     entities = [
@@ -38,6 +39,7 @@ abstract class RedForgeDatabase : RoomDatabase() {
 
     companion object {
         @Volatile private var INSTANCE: RedForgeDatabase? = null
+        private var seedJob: Job? = null
 
         fun getInstance(context: Context): RedForgeDatabase =
             INSTANCE ?: synchronized(this) {
@@ -48,29 +50,29 @@ abstract class RedForgeDatabase : RoomDatabase() {
                 )
                     // Automatic Android backup/device-transfer is disabled; explicit
                     // user-initiated backup export is handled by DataBackupUtil.
-                    .addCallback(SeedCallback(context.applicationContext))
                     .addMigrations(*ALL_MIGRATIONS)
                     .build()
-                    .also { INSTANCE = it }
+                    .also { database ->
+                        INSTANCE = database
+                        seedJob?.cancel()
+                        seedJob = CoroutineScope(Dispatchers.IO).launch {
+                            ExerciseLibrarySeeder.ensureSeeded(database)
+                        }
+                    }
             }
 
         /** Closes and clears the cached instance so its underlying file can be safely overwritten — used by manual data import. */
         fun closeInstance() {
             synchronized(this) {
+                seedJob?.let { job ->
+                    job.cancel()
+                    runBlocking { job.join() }
+                }
+                seedJob = null
                 INSTANCE?.close()
                 INSTANCE = null
             }
         }
     }
 
-    /** Ensures the v0.6 curated catalog exists without touching custom exercises. */
-    private class SeedCallback(private val context: Context) : RoomDatabase.Callback() {
-        override fun onOpen(db: SupportSQLiteDatabase) {
-            super.onOpen(db)
-            CoroutineScope(Dispatchers.IO).launch {
-                val database = getInstance(context)
-                ExerciseLibrarySeeder.ensureSeeded(database)
-            }
-        }
-    }
 }
