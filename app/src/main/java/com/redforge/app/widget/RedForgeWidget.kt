@@ -2,31 +2,31 @@ package com.redforge.app.widget
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.ImageProvider
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.action.actionRunCallback
-import androidx.glance.action.clickable
+import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
+import androidx.glance.action.clickable
 import androidx.glance.background
 import androidx.glance.layout.Column
-import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.graphics.Color
 import com.redforge.app.MainActivity
+import com.redforge.app.R
 import com.redforge.app.RedForgeApplication
 import com.redforge.app.domain.schedule.SplitScheduler
 import com.redforge.app.domain.streak.StreakCalculator
@@ -37,24 +37,27 @@ class RedForgeWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val app = context.applicationContext as RedForgeApplication
+
         val activeSplit = app.splitRepository.observeActiveSplit().first()
         val sessions = app.workoutRepository.observeAllSessions().first()
         val inProgress = app.workoutRepository.observeInProgressSession().first()
         val settings = app.settingsDataStore.settingsFlow.first()
+
         val todayStart = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }.timeInMillis
+
         val todaySkipped = activeSplit != null &&
             settings.skippedSplitId == activeSplit.id &&
             settings.skippedWorkoutDayStartMillis == todayStart
-        val rawStreak = StreakCalculator.compute(sessions).current
-        val streak = if (todaySkipped) 0 else rawStreak
 
-        val days = activeSplit?.let {
-            app.splitRepository.observeDays(it.id).first()
+        val streak = if (todaySkipped) 0 else StreakCalculator.compute(sessions).current
+
+        val days = activeSplit?.let { splitRepository ->
+            app.splitRepository.observeDays(splitRepository.id).first()
         }.orEmpty()
 
         val anchor = settings.scheduleAnchorStartMillis.takeIf {
@@ -99,10 +102,15 @@ class RedForgeWidget : GlanceAppWidget() {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(Color(0xFF17171A))
+                    .background(ImageProvider(R.drawable.widget_background_gradient))
                     .padding(16.dp)
             ) {
-                Row(modifier = GlanceModifier.fillMaxWidth()) {
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .background(ImageProvider(R.drawable.widget_header_surface))
+                        .padding(horizontal = 16.dp, vertical = 13.dp)
+                ) {
                     Text(
                         "REDFORGE",
                         style = TextStyle(
@@ -111,106 +119,108 @@ class RedForgeWidget : GlanceAppWidget() {
                             fontSize = 11.sp
                         )
                     )
-                }
-                Spacer(modifier = GlanceModifier.height(6.dp))
-                Text(
-                    title,
-                    style = TextStyle(
-                        color = ColorProvider(Color.White),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                )
-                Spacer(modifier = GlanceModifier.height(6.dp))
-                Text(
-                    "🔥 $streak day streak",
-                    style = TextStyle(
-                        color = ColorProvider(Color(0xFFE4141B)),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                )
-
-                Spacer(modifier = GlanceModifier.height(10.dp))
-
-                if (inProgress != null) {
-                    Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        Text(
-                            "RESUME",
-                            modifier = GlanceModifier
-                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                .background(Color(0xFFE4141B))
-                                .clickable(actionStartActivity(startIntent)),
-                            style = TextStyle(
-                                color = ColorProvider(Color.White),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
-                        Text(
-                            "OPEN",
-                            modifier = GlanceModifier
-                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                .clickable(actionStartActivity(openIntent)),
-                            style = TextStyle(
-                                color = ColorProvider(Color(0xFFB7B7C0)),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        )
-                    }
-                } else if (!todayCompleted && !todaySkipped && nextDay != null && !nextDay.isRestDay) {
-                    Row(modifier = GlanceModifier.fillMaxWidth()) {
-                        Text(
-                            "START",
-                            modifier = GlanceModifier
-                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                .background(Color(0xFFE4141B))
-                                .clickable(actionStartActivity(startIntent)),
-                            style = TextStyle(
-                                color = ColorProvider(Color.White),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
-                        Text(
-                            "SKIP",
-                            modifier = GlanceModifier
-                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                .clickable(actionRunCallback<SkipWorkoutAction>()),
-                            style = TextStyle(
-                                color = ColorProvider(Color(0xFFB7B7C0)),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        )
-                        Spacer(modifier = GlanceModifier.width(8.dp))
-                        Text(
-                            "OPEN",
-                            modifier = GlanceModifier
-                                .padding(vertical = 8.dp, horizontal = 10.dp)
-                                .clickable(actionStartActivity(openIntent)),
-                            style = TextStyle(
-                                color = ColorProvider(Color(0xFFB7B7C0)),
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 12.sp
-                            )
-                        )
-                    }
-                } else {
+                    Spacer(GlanceModifier.height(4.dp))
                     Text(
-                        "OPEN REDFORGE",
-                        modifier = GlanceModifier
-                            .padding(top = 4.dp)
-                            .clickable(actionStartActivity(openIntent)),
+                        title,
                         style = TextStyle(
                             color = ColorProvider(Color.White),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
+                            fontSize = 19.sp
                         )
                     )
+                }
+
+                Spacer(GlanceModifier.height(10.dp))
+
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .background(ImageProvider(R.drawable.widget_stat_surface))
+                        .padding(horizontal = 16.dp, vertical = 11.dp)
+                ) {
+                    Text(
+                        "CURRENT STREAK",
+                        style = TextStyle(
+                            color = ColorProvider(Color(0xFFB7B7C0)),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
+                        )
+                    )
+                    Spacer(GlanceModifier.height(2.dp))
+                    Text(
+                        "$streak DAYS",
+                        style = TextStyle(
+                            color = ColorProvider(Color(0xFFFF6B35)),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    )
+                }
+
+                Spacer(GlanceModifier.height(10.dp))
+
+                when {
+                    inProgress != null -> {
+                        Text(
+                            "RESUME WORKOUT",
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .background(ImageProvider(R.drawable.widget_primary_action))
+                                .padding(vertical = 13.dp, horizontal = 16.dp)
+                                .clickable(actionStartActivity(startIntent)),
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
+
+                    !todayCompleted && !todaySkipped && nextDay != null && !nextDay.isRestDay -> {
+                        Text(
+                            "START WORKOUT",
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .background(ImageProvider(R.drawable.widget_primary_action))
+                                .padding(vertical = 13.dp, horizontal = 16.dp)
+                                .clickable(actionStartActivity(startIntent)),
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        )
+                        Spacer(GlanceModifier.height(8.dp))
+                        Text(
+                            "SKIP TODAY",
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .background(ImageProvider(R.drawable.widget_secondary_action))
+                                .padding(vertical = 11.dp, horizontal = 16.dp)
+                                .clickable(actionRunCallback<SkipWorkoutAction>()),
+                            style = TextStyle(
+                                color = ColorProvider(Color(0xFFD5D5DB)),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
+
+                    else -> {
+                        Text(
+                            "OPEN REDFORGE",
+                            modifier = GlanceModifier
+                                .fillMaxWidth()
+                                .background(ImageProvider(R.drawable.widget_secondary_action))
+                                .padding(vertical = 12.dp, horizontal = 16.dp)
+                                .clickable(actionStartActivity(openIntent)),
+                            style = TextStyle(
+                                color = ColorProvider(Color.White),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        )
+                    }
                 }
             }
         }
