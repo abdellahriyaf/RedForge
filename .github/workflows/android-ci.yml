@@ -53,12 +53,13 @@ jobs:
           unzip -t "$release_apk" >/dev/null
           sha256sum "$debug_apk" "$release_apk"
 
-      - name: Show generated Room schema
+      - name: Verify committed Room schema baseline
         run: |
           set -euo pipefail
           schema="app/schemas/com.redforge.app.data.local.db.RedForgeDatabase/3.json"
           test -s "$schema"
-          cat "$schema"
+          grep -q '"version": 3' "$schema"
+          git diff --exit-code -- "$schema"
 
       - name: Unit tests
         run: ./gradlew test --stacktrace --console=plain
