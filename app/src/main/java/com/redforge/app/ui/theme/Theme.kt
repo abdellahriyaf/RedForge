@@ -54,7 +54,9 @@ fun RedForgeTheme(
     forceDark: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val useDark = forceDark || darkTheme
+    // RedForge uses a dark-only visual system; never let the device light theme
+    // switch Material text/content colors to black over the dark app surfaces.
+    val useDark = true
     val colorScheme = if (useDark) ForgeDarkColorScheme else ForgeLightColorScheme
 
     val view = LocalView.current
