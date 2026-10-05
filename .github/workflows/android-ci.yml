@@ -3,11 +3,7 @@ name: Android CI
 on:
   push:
     branches:
-      - main
-      - v0.6.7
-      - v0.6.8
-      - v0.6.9
-      - v0.6.9-prelaunch-icon
+      - '**'
   pull_request:
     branches:
       - main
@@ -16,9 +12,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
-    name: Build, test, and lint
+    name: Build, test, lint, and release
     runs-on: ubuntu-latest
 
     steps:
@@ -37,8 +37,28 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
-        run: ./gradlew clean assembleDebug --stacktrace --console=plain
+      - name: Build debug and release APKs
+        run: ./gradlew clean assembleDebug assembleRelease --stacktrace --console=plain
+
+      - name: Verify APK artifacts
+        run: |
+          set -euo pipefail
+          debug_apk="$(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          release_apk="$(find app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n 1)"
+          test -n "$debug_apk"
+          test -n "$release_apk"
+          test -s "$debug_apk"
+          test -s "$release_apk"
+          unzip -t "$debug_apk" >/dev/null
+          unzip -t "$release_apk" >/dev/null
+          sha256sum "$debug_apk" "$release_apk"
+
+      - name: Show generated Room schema
+        run: |
+          set -euo pipefail
+          schema="app/schemas/com.redforge.app.data.local.db.RedForgeDatabase/3.json"
+          test -s "$schema"
+          cat "$schema"
 
       - name: Unit tests
         run: ./gradlew test --stacktrace --console=plain
@@ -57,4 +77,20 @@ jobs:
         with:
           name: redforge-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redforge-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+
+      - name: Upload Room schemas
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: redforge-room-schemas
+          path: app/schemas/**
           if-no-files-found: error
