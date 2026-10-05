@@ -36,18 +36,16 @@ object DataBackupUtil {
 
     fun exportBackup(context: Context): Uri? {
         return try {
+            // Room uses WAL. Close the Room instance before copying the main
+            // database file so SQLite flushes the WAL and the snapshot contains
+            // the complete schema and data in a single self-contained file.
             val db = RedForgeDatabase.getInstance(context)
 
             if (!db.isOpen) {
                 return null
             }
 
-            // Flush WAL contents into the main database file before taking the
-            // snapshot. Do not wrap the file copy in a SQL transaction: the
-            // database file is the snapshot target, not the transaction target.
-            db.openHelper.writableDatabase
-                .query("PRAGMA wal_checkpoint(TRUNCATE)")
-                .use { }
+            RedForgeDatabase.closeInstance()
 
             val timestamp = SimpleDateFormat(
                 "yyyyMMdd_HHmmss",
