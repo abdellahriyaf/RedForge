@@ -34,33 +34,51 @@ class BackupValidationTest {
     @Test
     fun exportAndImportRoundTripPreservesDatabaseData() = runBlocking {
         val database = RedForgeDatabase.getInstance(context)
+        val exerciseName = "Backup Round Trip Exercise"
+
         database.exerciseDao().upsert(
             Exercise(
-                name = "Backup Round Trip Exercise",
+                name = exerciseName,
                 muscleGroup = "Test",
                 isCustom = true
             )
         )
 
+        assertNotNull(
+            "test exercise was not persisted before backup",
+            database.exerciseDao().getByName(exerciseName)
+        )
+
+        database.openHelper.writableDatabase
+            .query("PRAGMA wal_checkpoint(TRUNCATE)", emptyArray())
+            .use { }
+
         val backupUri = DataBackupUtil.exportBackup(context)
-        assertNotNull("backup export failed", backupUri)
+        assertNotNull("backup export returned null", backupUri)
+
+        val exportedUri = backupUri!!
         assertTrue(
             "exported backup failed validation",
-            DataBackupUtil.isValidBackup(context, backupUri!!)
+            DataBackupUtil.isValidBackup(context, exportedUri)
         )
 
         RedForgeDatabase.closeInstance()
-        context.deleteDatabase("redforge.db")
+        assertTrue(
+            "test database file could not be deleted before restore",
+            context.deleteDatabase("redforge.db")
+        )
 
         assertTrue(
-            "backup import failed",
-            DataBackupUtil.importBackup(context, backupUri)
+            "backup import returned false",
+            DataBackupUtil.importBackup(context, exportedUri)
         )
 
         RedForgeDatabase.closeInstance()
         val restored = RedForgeDatabase.getInstance(context)
-        assertTrue(
-            restored.exerciseDao().getByName("Backup Round Trip Exercise") != null
+
+        assertNotNull(
+            "restored database did not contain the test exercise",
+            restored.exerciseDao().getByName(exerciseName)
         )
     }
 }
